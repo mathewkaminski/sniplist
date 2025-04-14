@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Scissors } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AudioPlayerProps {
   videoId: string | null;
@@ -21,17 +21,16 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [player, setPlayer] = useState<YT.Player | null>(null);
   const [snippetMarker, setSnippetMarker] = useState<SnippetMarker | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!videoId) return;
 
-    // Load YouTube IFrame API
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
 
-    // Initialize player when API is ready
     window.onYouTubeIframeAPIReady = () => {
       const newPlayer = new window.YT.Player('youtube-player', {
         videoId,
@@ -52,7 +51,6 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
     };
   }, [videoId]);
 
-  // Update current time every second while playing
   useEffect(() => {
     if (!player || !isPlaying) return;
 
@@ -63,6 +61,50 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
 
     return () => clearInterval(interval);
   }, [player, isPlaying]);
+
+  const handleSetSnippet = () => {
+    if (!player) return;
+    
+    const currentPosition = player.getCurrentTime();
+    const snippetEnd = Math.min(duration, currentPosition + 20); // 20 seconds from current position
+    
+    setSnippetMarker({ start: currentPosition, end: snippetEnd });
+    toast.success("Snippet marked! Click 'Snip' to save the 20-second segment.");
+  };
+
+  const handleSnip = async () => {
+    if (!snippetMarker || !videoId) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast.error("Please sign in to save snippets");
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('snippets')
+        .insert({
+          video_id: videoId,
+          start_time: snippetMarker.start,
+          end_time: snippetMarker.end,
+          user_id: user.id,
+          title: `Snippet ${Math.floor(snippetMarker.start)}s - ${Math.floor(snippetMarker.end)}s`,
+        });
+
+      if (insertError) throw insertError;
+      
+      toast.success("Snippet saved successfully!");
+      setSnippetMarker(null);
+    } catch (error: any) {
+      toast.error("Error saving snippet: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const togglePlayPause = () => {
     if (!player) return;
@@ -80,23 +122,6 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
     const newTime = values[0];
     player.seekTo(newTime, true);
     setCurrentTime(newTime);
-  };
-
-  const handleSetSnippet = () => {
-    if (!player) return;
-    
-    const currentPosition = player.getCurrentTime();
-    const snippetEnd = Math.min(duration, currentPosition + 20); // 20 seconds from current position
-    
-    setSnippetMarker({ start: currentPosition, end: snippetEnd });
-    toast.success("Snippet marked! Click 'Snip' to save the 20-second segment.");
-  };
-
-  const handleSnip = () => {
-    if (!snippetMarker) return;
-    
-    // For now, just show a toast - we'll integrate with the profile later
-    toast.success("This will save the snippet to your profile once we add user authentication!");
   };
 
   if (!videoId) return null;
@@ -139,9 +164,10 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
               onClick={handleSnip}
               variant="default"
               className="ml-2 gap-2"
+              disabled={isSaving}
             >
               <Scissors className="h-4 w-4" />
-              Snip
+              {isSaving ? "Saving..." : "Snip"}
             </Button>
           )}
         </div>
