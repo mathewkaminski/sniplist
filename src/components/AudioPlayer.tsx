@@ -4,9 +4,15 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
+import { toast } from "sonner";
 
 interface AudioPlayerProps {
   videoId: string | null;
+}
+
+interface SnippetMarker {
+  start: number;
+  end: number;
 }
 
 export function AudioPlayer({ videoId }: AudioPlayerProps) {
@@ -14,6 +20,7 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [player, setPlayer] = useState<YT.Player | null>(null);
+  const [snippetMarker, setSnippetMarker] = useState<SnippetMarker | null>(null);
 
   useEffect(() => {
     if (!videoId) return;
@@ -26,7 +33,7 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
 
     // Initialize player when API is ready
     window.onYouTubeIframeAPIReady = () => {
-      const newPlayer = new YT.Player('youtube-player', {
+      const newPlayer = new window.YT.Player('youtube-player', {
         videoId,
         events: {
           onReady: () => {
@@ -75,6 +82,17 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
     setCurrentTime(newTime);
   };
 
+  const handleSetSnippet = () => {
+    if (!player) return;
+    
+    const currentPosition = player.getCurrentTime();
+    const snippetStart = Math.max(0, currentPosition - 10); // Start 10 seconds before current position
+    const snippetEnd = Math.min(duration, currentPosition + 10); // End 10 seconds after current position
+    
+    setSnippetMarker({ start: snippetStart, end: snippetEnd });
+    toast.success("Snippet marker set! 20-second segment marked for processing.");
+  };
+
   if (!videoId) return null;
 
   return (
@@ -101,9 +119,23 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
               className="cursor-pointer"
             />
           </div>
+          {!isPlaying && (
+            <Button
+              onClick={handleSetSnippet}
+              variant="default"
+              className="ml-2"
+            >
+              Set
+            </Button>
+          )}
         </div>
-        <div className="text-sm text-gray-500">
-          {Math.floor(currentTime)}s / {Math.floor(duration)}s
+        <div className="flex justify-between text-sm text-gray-500">
+          <span>{Math.floor(currentTime)}s / {Math.floor(duration)}s</span>
+          {snippetMarker && (
+            <span>
+              Snippet: {Math.floor(snippetMarker.start)}s - {Math.floor(snippetMarker.end)}s
+            </span>
+          )}
         </div>
       </div>
     </Card>
