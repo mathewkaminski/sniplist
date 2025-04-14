@@ -12,22 +12,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogIn, User, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 export function UserMenu() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(supabase.auth.getUser());
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-      setLoading(false);
-    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {

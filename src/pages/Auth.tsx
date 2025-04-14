@@ -23,9 +23,12 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: window.location.origin
+          }
         });
         if (error) throw error;
-        toast.success("Sign up successful! Please check your email for verification.");
+        toast.success("Check your email to verify your account!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -35,7 +38,7 @@ export default function Auth() {
         toast.success("Signed in successfully!");
         navigate("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setLoading(false);
@@ -66,6 +69,7 @@ export default function Auth() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
