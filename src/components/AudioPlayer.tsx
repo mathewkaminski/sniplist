@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Scissors } from "lucide-react";
 import { toast } from "sonner";
 
 interface AudioPlayerProps {
@@ -86,11 +86,17 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
     if (!player) return;
     
     const currentPosition = player.getCurrentTime();
-    const snippetStart = Math.max(0, currentPosition - 10); // Start 10 seconds before current position
-    const snippetEnd = Math.min(duration, currentPosition + 10); // End 10 seconds after current position
+    const snippetEnd = Math.min(duration, currentPosition + 20); // 20 seconds from current position
     
-    setSnippetMarker({ start: snippetStart, end: snippetEnd });
-    toast.success("Snippet marker set! 20-second segment marked for processing.");
+    setSnippetMarker({ start: currentPosition, end: snippetEnd });
+    toast.success("Snippet marked! Click 'Snip' to save the 20-second segment.");
+  };
+
+  const handleSnip = () => {
+    if (!snippetMarker) return;
+    
+    // For now, just show a toast - we'll integrate with the profile later
+    toast.success("This will save the snippet to your profile once we add user authentication!");
   };
 
   if (!videoId) return null;
@@ -119,13 +125,23 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
               className="cursor-pointer"
             />
           </div>
-          {!isPlaying && (
+          {!isPlaying && !snippetMarker && (
             <Button
               onClick={handleSetSnippet}
               variant="default"
               className="ml-2"
             >
               Set
+            </Button>
+          )}
+          {snippetMarker && (
+            <Button
+              onClick={handleSnip}
+              variant="default"
+              className="ml-2 gap-2"
+            >
+              <Scissors className="h-4 w-4" />
+              Snip
             </Button>
           )}
         </div>
