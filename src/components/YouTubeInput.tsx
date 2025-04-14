@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export function YouTubeInput() {
       {videoId && (
         <div>
           <div className="relative aspect-video w-full">
-            <div id="youtube-player" />
+            <div id="youtube-player" className="absolute inset-0"></div>
           </div>
           <div className="mt-6">
             <AudioPlayer videoId={videoId} />

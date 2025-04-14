@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -22,32 +23,67 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
   const [player, setPlayer] = useState<YT.Player | null>(null);
   const [snippetMarker, setSnippetMarker] = useState<SnippetMarker | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const youtubeApiLoaded = useRef(false);
 
   useEffect(() => {
     if (!videoId) return;
 
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-    window.onYouTubeIframeAPIReady = () => {
-      const newPlayer = new window.YT.Player('youtube-player', {
-        videoId,
-        events: {
-          onReady: () => {
-            setDuration(newPlayer.getDuration());
+    // Function to initialize YouTube player
+    const initializePlayer = () => {
+      if (!playerContainerRef.current || !window.YT) return;
+      
+      try {
+        const newPlayer = new window.YT.Player('youtube-player', {
+          videoId,
+          events: {
+            onReady: () => {
+              setDuration(newPlayer.getDuration());
+              console.log("YouTube player ready");
+            },
+            onStateChange: (event) => {
+              setIsPlaying(event.data === YT.PlayerState.PLAYING);
+            },
+            onError: (event) => {
+              console.error("YouTube player error:", event);
+              toast.error("Failed to load video");
+            }
           },
-          onStateChange: (event) => {
-            setIsPlaying(event.data === YT.PlayerState.PLAYING);
-          },
-        },
-      });
-      setPlayer(newPlayer);
+        });
+        setPlayer(newPlayer);
+      } catch (error) {
+        console.error("Error initializing YouTube player:", error);
+        toast.error("Failed to initialize player");
+      }
     };
 
+    // Check if the YouTube API is already loaded
+    if (window.YT && window.YT.Player) {
+      youtubeApiLoaded.current = true;
+      initializePlayer();
+    } else {
+      // If YouTube API is not loaded, load it
+      if (!document.getElementById('youtube-api-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-api-script';
+        tag.src = "https://www.youtube.com/iframe_api";
+        tag.async = true;
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      }
+
+      // Define the onYouTubeIframeAPIReady callback
+      window.onYouTubeIframeAPIReady = () => {
+        youtubeApiLoaded.current = true;
+        initializePlayer();
+      };
+    }
+
+    // Clean up function to destroy player on unmount
     return () => {
-      player?.destroy();
+      if (player) {
+        player.destroy();
+      }
     };
   }, [videoId]);
 
@@ -129,6 +165,7 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
   return (
     <Card className="p-6">
       <div className="space-y-4">
+        <div ref={playerContainerRef} id="youtube-player" className="hidden"></div>
         <div className="flex items-center gap-4">
           <Button 
             size="icon" 
