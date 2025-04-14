@@ -20,7 +20,7 @@ export const isValidYouTubeUrl = (url: string): boolean => {
 
 export const fetchVideoTitle = async (videoId: string): Promise<string> => {
   try {
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyDhudrIz1wE9UcPBoIelG63xUVZIwa6KPc`);
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyC3HN2pHvZxTGgmHjl97x7wKtxsJz5p-zc`);
     const data = await response.json();
     
     if (data.items && data.items.length > 0) {
