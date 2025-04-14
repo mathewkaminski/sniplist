@@ -35,6 +35,7 @@ export type Database = {
       }
       snippets: {
         Row: {
+          artist: string | null
           created_at: string
           end_time: number
           id: string
@@ -44,6 +45,7 @@ export type Database = {
           video_id: string
         }
         Insert: {
+          artist?: string | null
           created_at?: string
           end_time: number
           id?: string
@@ -53,6 +55,7 @@ export type Database = {
           video_id: string
         }
         Update: {
+          artist?: string | null
           created_at?: string
           end_time?: number
           id?: string

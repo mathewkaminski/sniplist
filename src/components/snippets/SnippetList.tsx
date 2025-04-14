@@ -39,7 +39,7 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
           <TableHead>Artist</TableHead>
           <TableHead>Audio</TableHead>
           <TableHead>Time Range</TableHead>
-          <TableHead className="w-32">Created</TableHead>
+          <TableHead className="w-24 text-right">Created</TableHead>
           <TableHead className="w-16 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -80,7 +80,7 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
               />
             </TableCell>
             <TableCell>{`${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`}</TableCell>
-            <TableCell className="w-32">
+            <TableCell className="w-24 text-right">
               {formatDistance(new Date(snippet.created_at), new Date(), { addSuffix: true })}
             </TableCell>
             <TableCell className="w-16 text-right">
