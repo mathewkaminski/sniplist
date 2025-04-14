@@ -1,31 +1,10 @@
 
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
-import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
-} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { formatDistance } from "date-fns";
-import { Trash2, Pencil } from "lucide-react";
-import { SnippetPlayer } from "@/components/SnippetPlayer";
-import { fetchVideoTitle } from "@/utils/youtube";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { SnippetList } from "@/components/snippets/SnippetList";
+import { EditTitleDialog } from "@/components/snippets/EditTitleDialog";
 
 interface Snippet {
   id: string;
@@ -61,9 +40,7 @@ export default function MyList() {
       const snippetsWithTitles = await Promise.all(
         (data || []).map(async (snippet) => {
           try {
-            console.log(`Fetching title for video ID: ${snippet.video_id}`);
             const youtubeTitle = await fetchVideoTitle(snippet.video_id);
-            console.log(`Fetched title for ${snippet.video_id}:`, youtubeTitle);
             return {
               ...snippet,
               youtube_title: youtubeTitle
@@ -110,17 +87,12 @@ export default function MyList() {
     }
 
     try {
-      console.log(`Updating title for snippet ID: ${editingId} to: ${editingTitle.trim()}`);
-      
       const { error } = await supabase
         .from('snippets')
         .update({ title: editingTitle.trim() })
         .eq('id', editingId);
       
-      if (error) {
-        console.error('Error updating title:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       setSnippets(snippets.map(snippet => 
         snippet.id === editingId 
@@ -154,99 +126,23 @@ export default function MyList() {
             ) : snippets.length === 0 ? (
               <p className="text-gray-500">No snippets saved yet.</p>
             ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Audio</TableHead>
-                      <TableHead>Time Range</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {snippets.map((snippet) => (
-                      <TableRow key={snippet.id}>
-                        <TableCell className="font-medium max-w-xs">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="truncate" title={snippet.title}>
-                                {snippet.title}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {snippet.title}
-                            </TooltipContent>
-                          </Tooltip>
-                          {snippet.youtube_title && snippet.youtube_title !== 'Untitled Video' && (
-                            <div className="text-xs text-gray-500 truncate">
-                              From: {snippet.youtube_title}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <SnippetPlayer 
-                            videoId={snippet.video_id}
-                            startTime={snippet.start_time}
-                            endTime={snippet.end_time}
-                          />
-                        </TableCell>
-                        <TableCell>{`${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`}</TableCell>
-                        <TableCell>
-                          {formatDistance(new Date(snippet.created_at), new Date(), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => openEditDialog(snippet)}
-                          >
-                            <Pencil className="h-4 w-4 text-gray-500" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDelete(snippet.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Edit Title</DialogTitle>
-                      <DialogDescription>
-                        Update the title for your snippet.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <Input
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        placeholder="Enter new title"
-                      />
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleUpdateTitle}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </>
+              <SnippetList 
+                snippets={snippets}
+                onDelete={handleDelete}
+                onEdit={openEditDialog}
+              />
             )}
           </div>
         </div>
       </main>
+
+      <EditTitleDialog
+        open={dialogOpen}
+        title={editingTitle}
+        onOpenChange={setDialogOpen}
+        onSave={handleUpdateTitle}
+        onTitleChange={setEditingTitle}
+      />
     </div>
   );
 }
