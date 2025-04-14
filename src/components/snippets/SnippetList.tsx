@@ -8,10 +8,11 @@ import {
   TableCell 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, ExternalLink } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getYoutubeVideoUrl } from "@/utils/youtube";
 
 interface Snippet {
   id: string;
@@ -40,7 +41,7 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
           <TableHead>Audio</TableHead>
           <TableHead>Time Range</TableHead>
           <TableHead className="w-24 text-right">Created</TableHead>
-          <TableHead className="w-16 text-right">Actions</TableHead>
+          <TableHead className="w-28 text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -83,14 +84,36 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
             <TableCell className="w-24 text-right">
               {formatDistance(new Date(snippet.created_at), new Date(), { addSuffix: true })}
             </TableCell>
-            <TableCell className="w-16 text-right">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => onDelete(snippet.id)}
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
+            <TableCell className="w-28 text-right">
+              <div className="flex justify-end gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      asChild
+                    >
+                      <a 
+                        href={getYoutubeVideoUrl(snippet.video_id)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4 text-blue-500" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Open in YouTube
+                  </TooltipContent>
+                </Tooltip>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => onDelete(snippet.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
             </TableCell>
           </TableRow>
         ))}
