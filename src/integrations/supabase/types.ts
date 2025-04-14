@@ -33,6 +33,36 @@ export type Database = {
         }
         Relationships: []
       }
+      snippets: {
+        Row: {
+          created_at: string
+          end_time: number
+          id: string
+          start_time: number
+          title: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: number
+          id?: string
+          start_time: number
+          title: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: number
+          id?: string
+          start_time?: number
+          title?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
