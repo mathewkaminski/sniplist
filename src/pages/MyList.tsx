@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { formatDistance } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
+import { fetchVideoTitle } from "@/utils/youtube";
 
 interface Snippet {
   id: string;
@@ -22,6 +23,7 @@ interface Snippet {
   start_time: number;
   end_time: number;
   created_at: string;
+  youtube_title?: string;
 }
 
 export default function MyList() {
@@ -40,7 +42,15 @@ export default function MyList() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setSnippets(data || []);
+
+      const snippetsWithTitles = await Promise.all(
+        (data || []).map(async (snippet) => ({
+          ...snippet,
+          youtube_title: await fetchVideoTitle(snippet.video_id)
+        }))
+      );
+      
+      setSnippets(snippetsWithTitles);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -89,7 +99,11 @@ export default function MyList() {
                 <TableBody>
                   {snippets.map((snippet) => (
                     <TableRow key={snippet.id}>
-                      <TableCell className="font-medium">{snippet.title}</TableCell>
+                      <TableCell className="font-medium max-w-xs">
+                        <div className="truncate" title={snippet.youtube_title}>
+                          {snippet.youtube_title || snippet.title}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <SnippetPlayer 
                           videoId={snippet.video_id}

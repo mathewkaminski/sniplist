@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -29,7 +28,6 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
   useEffect(() => {
     if (!videoId) return;
 
-    // Function to initialize YouTube player
     const initializePlayer = () => {
       if (!playerContainerRef.current || !window.YT) return;
       
@@ -43,10 +41,6 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
             },
             onStateChange: (event) => {
               setIsPlaying(event.data === YT.PlayerState.PLAYING);
-            },
-            onError: (event) => {
-              console.error("YouTube player error:", event);
-              toast.error("Failed to load video");
             }
           },
         });

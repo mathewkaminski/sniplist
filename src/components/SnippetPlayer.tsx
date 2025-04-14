@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -20,8 +19,6 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
 
     const newPlayer = new window.YT.Player(playerId, {
       videoId,
-      height: '1',
-      width: '1',
       events: {
         onReady: () => {
           console.log("Snippet player ready");
