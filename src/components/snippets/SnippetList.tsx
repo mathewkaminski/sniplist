@@ -61,11 +61,7 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
                   {snippet.title}
                 </TooltipContent>
               </Tooltip>
-              {snippet.youtube_title && snippet.youtube_title !== 'Untitled Video' && (
-                <div className="text-xs text-gray-500 truncate">
-                  From: {snippet.youtube_title}
-                </div>
-              )}
+              {/* Removed the YouTube title display here */}
             </TableCell>
             <TableCell 
               className="cursor-pointer hover:bg-muted/50"
