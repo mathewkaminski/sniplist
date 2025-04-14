@@ -3,14 +3,34 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
+import { isValidYouTubeUrl, extractYouTubeId } from "@/utils/youtube";
 
 export function YouTubeInput() {
   const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Validate and process YouTube URL
-    console.log("Processing URL:", url);
+    
+    if (!isValidYouTubeUrl(url)) {
+      toast.error("Please enter a valid YouTube URL");
+      return;
+    }
+
+    setIsLoading(true);
+    const videoId = extractYouTubeId(url);
+    
+    try {
+      // For now we'll just validate and extract the ID
+      // In the next step we'll add actual video loading
+      toast.success(`Valid YouTube video ID: ${videoId}`);
+    } catch (error) {
+      toast.error("Failed to load video");
+      console.error("Error loading video:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -30,7 +50,9 @@ export function YouTubeInput() {
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1"
           />
-          <Button type="submit">Load Video</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Loading..." : "Load Video"}
+          </Button>
         </div>
       </form>
     </Card>
