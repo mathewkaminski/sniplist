@@ -9,6 +9,7 @@ import { isValidYouTubeUrl, extractYouTubeId } from "@/utils/youtube";
 export function YouTubeInput() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [videoId, setVideoId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,12 +20,15 @@ export function YouTubeInput() {
     }
 
     setIsLoading(true);
-    const videoId = extractYouTubeId(url);
+    const newVideoId = extractYouTubeId(url);
     
     try {
-      // For now we'll just validate and extract the ID
-      // In the next step we'll add actual video loading
-      toast.success(`Valid YouTube video ID: ${videoId}`);
+      if (newVideoId) {
+        setVideoId(newVideoId);
+        toast.success("Video loaded successfully");
+      } else {
+        toast.error("Failed to extract video ID");
+      }
     } catch (error) {
       toast.error("Failed to load video");
       console.error("Error loading video:", error);
@@ -55,6 +59,20 @@ export function YouTubeInput() {
           </Button>
         </div>
       </form>
+      
+      {videoId && (
+        <div className="mt-6">
+          <div className="relative aspect-video w-full">
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              className="absolute inset-0 h-full w-full rounded-lg"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="YouTube video player"
+            />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
