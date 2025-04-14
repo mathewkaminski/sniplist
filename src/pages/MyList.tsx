@@ -1,14 +1,15 @@
-
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SnippetList } from "@/components/snippets/SnippetList";
 import { EditTitleDialog } from "@/components/snippets/EditTitleDialog";
+import { fetchVideoTitle } from "@/utils/youtube";
 
 interface Snippet {
   id: string;
   title: string;
+  artist?: string;
   video_id: string;
   start_time: number;
   end_time: number;
@@ -20,6 +21,7 @@ export default function MyList() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTitle, setEditingTitle] = useState("");
+  const [editingArtist, setEditingArtist] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -80,8 +82,8 @@ export default function MyList() {
     }
   };
 
-  const handleUpdateTitle = async () => {
-    if (!editingId || !editingTitle.trim()) {
+  const handleUpdateDetails = async (newTitle: string, newArtist: string) => {
+    if (!editingId || !newTitle.trim()) {
       toast.error("Title cannot be empty");
       return;
     }
@@ -89,28 +91,32 @@ export default function MyList() {
     try {
       const { error } = await supabase
         .from('snippets')
-        .update({ title: editingTitle.trim() })
+        .update({ 
+          title: newTitle.trim(),
+          artist: newArtist.trim() || null
+        })
         .eq('id', editingId);
       
       if (error) throw error;
       
       setSnippets(snippets.map(snippet => 
         snippet.id === editingId 
-          ? { ...snippet, title: editingTitle.trim() }
+          ? { ...snippet, title: newTitle.trim(), artist: newArtist.trim() || null }
           : snippet
       ));
       
-      toast.success('Title updated successfully');
+      toast.success('Snippet details updated successfully');
       setDialogOpen(false);
     } catch (error: any) {
-      console.error('Failed to update title:', error);
-      toast.error(`Failed to update title: ${error.message}`);
+      console.error('Failed to update snippet details:', error);
+      toast.error(`Failed to update details: ${error.message}`);
     }
   };
 
   const openEditDialog = (snippet: Snippet) => {
     setEditingId(snippet.id);
     setEditingTitle(snippet.title);
+    setEditingArtist(snippet.artist || '');
     setDialogOpen(true);
   };
 
@@ -139,9 +145,11 @@ export default function MyList() {
       <EditTitleDialog
         open={dialogOpen}
         title={editingTitle}
+        artist={editingArtist}
         onOpenChange={setDialogOpen}
-        onSave={handleUpdateTitle}
+        onSave={handleUpdateDetails}
         onTitleChange={setEditingTitle}
+        onArtistChange={setEditingArtist}
       />
     </div>
   );
