@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { 
@@ -14,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistance } from "date-fns";
 import { Trash2 } from "lucide-react";
+import { SnippetPlayer } from "@/components/SnippetPlayer";
 
 interface Snippet {
   id: string;
@@ -80,6 +80,7 @@ export default function MyList() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
+                    <TableHead>Audio</TableHead>
                     <TableHead>Time Range</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -89,6 +90,13 @@ export default function MyList() {
                   {snippets.map((snippet) => (
                     <TableRow key={snippet.id}>
                       <TableCell className="font-medium">{snippet.title}</TableCell>
+                      <TableCell>
+                        <SnippetPlayer 
+                          videoId={snippet.video_id}
+                          startTime={snippet.start_time}
+                          endTime={snippet.end_time}
+                        />
+                      </TableCell>
                       <TableCell>{`${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`}</TableCell>
                       <TableCell>
                         {formatDistance(new Date(snippet.created_at), new Date(), { addSuffix: true })}
