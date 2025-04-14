@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { isValidYouTubeUrl, extractYouTubeId } from "@/utils/youtube";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 export function YouTubeInput() {
   const [url, setUrl] = useState("");
@@ -38,41 +38,40 @@ export function YouTubeInput() {
   };
 
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold">Add YouTube Video</h2>
-          <p className="text-sm text-gray-500">
-            Paste a YouTube URL to start creating your audio snippet
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            type="url"
-            placeholder="https://youtube.com/watch?v=..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Loading..." : "Load Video"}
-          </Button>
-        </div>
-      </form>
+    <div className="space-y-6">
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Add YouTube Video</h2>
+            <p className="text-sm text-gray-500">
+              Paste a YouTube URL to start creating your audio snippet
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="url"
+              placeholder="https://youtube.com/watch?v=..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Loading..." : "Load Video"}
+            </Button>
+          </div>
+        </form>
+      </Card>
       
       {videoId && (
-        <div className="mt-6">
+        <div>
           <div className="relative aspect-video w-full">
-            <iframe
-              src={`https://www.youtube.com/embed/${videoId}`}
-              className="absolute inset-0 h-full w-full rounded-lg"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="YouTube video player"
-            />
+            <div id="youtube-player" />
+          </div>
+          <div className="mt-6">
+            <AudioPlayer videoId={videoId} />
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
