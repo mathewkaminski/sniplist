@@ -21,7 +21,13 @@ export function Header() {
         >
           <Home className="h-6 w-6 text-purple-700" />
         </Button>
-        <h1 className="text-2xl font-bold text-purple-700">AudioSnippet</h1>
+        <Button 
+          variant="ghost" 
+          className="text-2xl font-bold text-purple-700 hover:bg-transparent"
+          onClick={handleHomeClick}
+        >
+          Sniplist
+        </Button>
         <div className="flex items-center gap-4">
           <Button variant="ghost">
             <PlusCircle className="mr-2 h-4 w-4" />
