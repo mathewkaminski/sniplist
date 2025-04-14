@@ -1,3 +1,4 @@
+
 export const extractYouTubeId = (url: string): string | null => {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
@@ -20,8 +21,14 @@ export const isValidYouTubeUrl = (url: string): boolean => {
 
 export const fetchVideoTitle = async (videoId: string): Promise<string> => {
   try {
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyC3HN2pHvZxTGgmHjl97x7wKtxsJz5p-zc`);
+    // Using a different API key - the previous ones weren't working
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyBtL6-crDXNdpxlbmzRfwi27IaFyRrKlBY`);
     const data = await response.json();
+    
+    if (data.error) {
+      console.error('YouTube API error:', data.error);
+      return 'Untitled Video';
+    }
     
     if (data.items && data.items.length > 0) {
       return data.items[0].snippet.title;

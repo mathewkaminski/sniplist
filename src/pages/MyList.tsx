@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { 
@@ -36,6 +37,7 @@ export default function MyList() {
 
   const fetchSnippets = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('snippets')
         .select('*')
@@ -43,16 +45,30 @@ export default function MyList() {
       
       if (error) throw error;
 
+      // Fetch YouTube titles for all snippets in parallel
       const snippetsWithTitles = await Promise.all(
-        (data || []).map(async (snippet) => ({
-          ...snippet,
-          youtube_title: await fetchVideoTitle(snippet.video_id)
-        }))
+        (data || []).map(async (snippet) => {
+          try {
+            const youtubeTitle = await fetchVideoTitle(snippet.video_id);
+            console.log(`Fetched title for ${snippet.video_id}:`, youtubeTitle);
+            return {
+              ...snippet,
+              youtube_title: youtubeTitle
+            };
+          } catch (err) {
+            console.error(`Failed to fetch title for ${snippet.video_id}:`, err);
+            return {
+              ...snippet,
+              youtube_title: 'Untitled Video'
+            };
+          }
+        })
       );
       
       setSnippets(snippetsWithTitles);
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Error fetching snippets:', error);
+      toast.error(`Failed to load snippets: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -100,7 +116,7 @@ export default function MyList() {
                   {snippets.map((snippet) => (
                     <TableRow key={snippet.id}>
                       <TableCell className="font-medium max-w-xs">
-                        <div className="truncate" title={snippet.youtube_title}>
+                        <div className="truncate" title={snippet.youtube_title || snippet.title}>
                           {snippet.youtube_title || snippet.title}
                         </div>
                       </TableCell>

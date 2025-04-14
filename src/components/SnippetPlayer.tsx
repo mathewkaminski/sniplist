@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -13,32 +14,57 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
   const [isPlaying, setIsPlaying] = useState(false);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const playerId = `youtube-player-${videoId}-${startTime}`;
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!window.YT || !playerContainerRef.current) return;
-
-    const newPlayer = new window.YT.Player(playerId, {
-      videoId,
-      events: {
-        onReady: () => {
-          console.log("Snippet player ready");
-        },
-        onStateChange: (event) => {
-          if (event.data === YT.PlayerState.PLAYING) {
-            setIsPlaying(true);
-          } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-            setIsPlaying(false);
-          }
-        }
-      }
-    });
-
-    setPlayer(newPlayer);
+    // Load YouTube API if not already loaded
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      
+      window.onYouTubeIframeAPIReady = initializePlayer;
+    } else {
+      initializePlayer();
+    }
 
     return () => {
-      newPlayer.destroy();
+      if (player) {
+        player.destroy();
+      }
+      
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
   }, [videoId, startTime]);
+
+  const initializePlayer = () => {
+    if (!window.YT || !playerContainerRef.current) return;
+    
+    try {
+      const newPlayer = new window.YT.Player(playerId, {
+        videoId,
+        events: {
+          onReady: () => {
+            console.log("Snippet player ready for video:", videoId);
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              setIsPlaying(true);
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+              setIsPlaying(false);
+            }
+          }
+        }
+      });
+
+      setPlayer(newPlayer);
+    } catch (error) {
+      console.error("Error initializing snippet player:", error);
+    }
+  };
 
   const togglePlayPause = () => {
     if (!player) return;
@@ -46,31 +72,33 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
     if (isPlaying) {
       player.pauseVideo();
       setIsPlaying(false);
+      
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     } else {
       player.seekTo(startTime, true);
       player.playVideo();
+      setIsPlaying(true);
       
-      // Stop playback when reaching end time
-      const checkTime = setInterval(() => {
+      // Monitor playback to stop at end time
+      intervalRef.current = window.setInterval(() => {
         const currentTime = player.getCurrentTime();
         if (currentTime >= endTime) {
           player.pauseVideo();
           setIsPlaying(false);
-          clearInterval(checkTime);
+          clearInterval(intervalRef.current as number);
+          intervalRef.current = null;
         }
       }, 100);
-
-      // Clear interval when stopping
-      setTimeout(() => {
-        clearInterval(checkTime);
-      }, (endTime - startTime) * 1000 + 1000);
     }
   };
 
   return (
     <div className="flex items-center gap-2">
       <div ref={playerContainerRef}>
-        <div id={playerId} style={{ width: 1, height: 1 }} />
+        <div id={playerId} style={{ width: 1, height: 1, position: 'absolute', opacity: 0 }} />
       </div>
       <Button 
         size="icon" 
