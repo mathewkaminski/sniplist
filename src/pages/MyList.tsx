@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { 
@@ -19,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -102,15 +104,23 @@ export default function MyList() {
   };
 
   const handleUpdateTitle = async () => {
-    if (!editingId || !editingTitle.trim()) return;
+    if (!editingId || !editingTitle.trim()) {
+      toast.error("Title cannot be empty");
+      return;
+    }
 
     try {
+      console.log(`Updating title for snippet ID: ${editingId} to: ${editingTitle.trim()}`);
+      
       const { error } = await supabase
         .from('snippets')
         .update({ title: editingTitle.trim() })
         .eq('id', editingId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating title:', error);
+        throw error;
+      }
       
       setSnippets(snippets.map(snippet => 
         snippet.id === editingId 
@@ -121,6 +131,7 @@ export default function MyList() {
       toast.success('Title updated successfully');
       setDialogOpen(false);
     } catch (error: any) {
+      console.error('Failed to update title:', error);
       toast.error(`Failed to update title: ${error.message}`);
     }
   };
@@ -160,14 +171,19 @@ export default function MyList() {
                         <TableCell className="font-medium max-w-xs">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="truncate" title={snippet.youtube_title || snippet.title}>
-                                {snippet.youtube_title || snippet.title}
+                              <div className="truncate" title={snippet.title}>
+                                {snippet.title}
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {snippet.youtube_title || snippet.title}
+                              {snippet.title}
                             </TooltipContent>
                           </Tooltip>
+                          {snippet.youtube_title && snippet.youtube_title !== 'Untitled Video' && (
+                            <div className="text-xs text-gray-500 truncate">
+                              From: {snippet.youtube_title}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <SnippetPlayer 
@@ -205,6 +221,9 @@ export default function MyList() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Edit Title</DialogTitle>
+                      <DialogDescription>
+                        Update the title for your snippet.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <Input
