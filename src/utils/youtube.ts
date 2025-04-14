@@ -21,8 +21,8 @@ export const isValidYouTubeUrl = (url: string): boolean => {
 
 export const fetchVideoTitle = async (videoId: string): Promise<string> => {
   try {
-    // Using a different API key - the previous ones weren't working
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyBtL6-crDXNdpxlbmzRfwi27IaFyRrKlBY`);
+    // Using a public API key for YouTube Data API v3
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=AIzaSyDJxFD3_kQ-iV-O_eO-P6ZpvdC4CpR8EFE`);
     const data = await response.json();
     
     if (data.error) {

@@ -16,6 +16,7 @@ import { formatDistance } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { fetchVideoTitle } from "@/utils/youtube";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Snippet {
   id: string;
@@ -49,6 +50,7 @@ export default function MyList() {
       const snippetsWithTitles = await Promise.all(
         (data || []).map(async (snippet) => {
           try {
+            console.log(`Fetching title for video ID: ${snippet.video_id}`);
             const youtubeTitle = await fetchVideoTitle(snippet.video_id);
             console.log(`Fetched title for ${snippet.video_id}:`, youtubeTitle);
             return {
@@ -116,9 +118,16 @@ export default function MyList() {
                   {snippets.map((snippet) => (
                     <TableRow key={snippet.id}>
                       <TableCell className="font-medium max-w-xs">
-                        <div className="truncate" title={snippet.youtube_title || snippet.title}>
-                          {snippet.youtube_title || snippet.title}
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="truncate" title={snippet.youtube_title || snippet.title}>
+                              {snippet.youtube_title || snippet.title}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {snippet.youtube_title || snippet.title}
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       <TableCell>
                         <SnippetPlayer 
