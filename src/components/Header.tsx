@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Home, ListMusic } from "lucide-react";
+import { PlusCircle, Home, ListMusic, FileText } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 
@@ -28,6 +28,13 @@ export function Header() {
             onClick={() => navigate("/my-list")}
           >
             <ListMusic className="h-6 w-6 text-purple-700" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/sniplists")}
+          >
+            <FileText className="h-6 w-6 text-purple-700" />
           </Button>
         </div>
         <Button 
