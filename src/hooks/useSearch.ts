@@ -14,10 +14,11 @@ export function useSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const MIN_SEARCH_LENGTH = 3;
 
+  const trimmedTerm = searchTerm.trim();
+
   const { data = [], isLoading, refetch } = useQuery({
-    queryKey: ["search"],
+    queryKey: ["search", trimmedTerm],
     queryFn: async () => {
-      const trimmedTerm = searchTerm.trim();
       if (trimmedTerm.length < MIN_SEARCH_LENGTH) return [];
 
       console.log("🔍 Calling Edge Function with term:", trimmedTerm);
@@ -38,21 +39,20 @@ export function useSearch() {
       console.warn("⚠️ Unexpected search format:", data);
       return [];
     },
-    enabled: false, // Prevent auto-run, we'll manually trigger with refetch
+    enabled: false, // Manual refetch
   });
 
-  // Manually trigger the search when the term changes
   useEffect(() => {
-    if (searchTerm.trim().length >= MIN_SEARCH_LENGTH) {
+    if (trimmedTerm.length >= MIN_SEARCH_LENGTH) {
       refetch();
     }
-  }, [searchTerm, refetch]);
+  }, [trimmedTerm, refetch]);
 
   return {
     searchTerm,
     setSearchTerm,
     results: Array.isArray(data) ? data : [],
     isLoading,
-    hasMinimumChars: searchTerm.trim().length >= MIN_SEARCH_LENGTH,
+    hasMinimumChars: trimmedTerm.length >= MIN_SEARCH_LENGTH,
   };
 }
