@@ -73,37 +73,19 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
           <CommandList>
-            {!hasMinimumChars && (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                Type at least 3 characters to search
-              </div>
-            )}
-          
-            {hasMinimumChars && !isLoading && safeResults.length === 0 && (
-              <CommandEmpty>No results found.</CommandEmpty>
-            )}
-          
-            {hasMinimumChars && isLoading && (
-              <div className="py-6 text-center text-sm">
-                Searching...
-              </div>
-            )}
-          
-            {safeResults.length > 0 && (
-              <CommandGroup heading="All Results">
-                {safeResults.map((result) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-2"
-                  >
-                    <span>{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">{result.type}</Badge>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
+           <CommandGroup heading="All Results">
+            {safeResults.map((result) => (
+              <CommandItem
+                key={`${result.type}-${result.id}`}
+                onSelect={() => handleSelect(result)}
+                className="flex items-center gap-2"
+              >
+                <span>{result.title}</span>
+                <Badge variant="outline" className="ml-auto">{result.type}</Badge>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
         </Command>
       </DialogContent>
     </Dialog>
