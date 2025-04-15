@@ -18,7 +18,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Debug logging for component state
+  // Debug logging for component state and raw results
   useEffect(() => {
     console.log("SearchDialog state:", { 
       searchTerm, 
@@ -28,11 +28,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     });
   }, [searchTerm, results, isLoading, hasMinimumChars]);
 
+  console.log("🎯 Raw results from useSearch:", results);
+
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
     setSearchTerm(''); // Reset search term when selecting a result
     
-    if (result.type === 'profile') {
+    if (result.type.toLowerCase() === 'profile') {
       navigate(`/profile/${result.id}`);
       toast.success(`Viewing profile`);
     } else {
@@ -44,9 +46,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   // Make sure results is always an array before filtering
   const safeResults = Array.isArray(results) ? results : [];
   
-  // Group results by type
-  const profileResults = safeResults.filter(result => result.type === 'profile');
-  const sniplistResults = safeResults.filter(result => result.type === 'sniplist');
+  // Group results by type with case-insensitive comparison
+  const profileResults = safeResults.filter(result => 
+    result.type?.toLowerCase() === 'profile'
+  );
+  const sniplistResults = safeResults.filter(result => 
+    result.type?.toLowerCase() === 'sniplist'
+  );
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
