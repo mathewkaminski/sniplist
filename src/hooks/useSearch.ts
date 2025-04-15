@@ -20,14 +20,11 @@ export function useSearch() {
       if (!searchTerm || searchTerm.trim().length < MIN_SEARCH_LENGTH) return [];
       
       try {
-        console.log("Searching for:", searchTerm);
-        
-        // Execute query with explicit ilike
-        console.log("Executing search query with pattern:", `%${searchTerm}%`);
+        console.log("Executing search with term:", searchTerm.trim());
         const { data, error } = await supabase
           .from('search_results')
           .select('*')
-          .ilike('title', `%${searchTerm}%`)
+          .ilike('title', `%${searchTerm.trim()}%`)
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -36,30 +33,28 @@ export function useSearch() {
           return [];
         }
         
-        console.log("Search results count:", data?.length);
-        console.log("Search results:", data);
-        
-        // If no results, try a direct query with more debug information
         if (!data || data.length === 0) {
-          console.log("No results found, trying direct query to check if view has data");
+          console.log("No results found for search term:", searchTerm.trim());
           
-          // Get all results to see what's available
-          const { data: allResults, error: allError } = await supabase
+          // Debug: Check what data exists in the view
+          const { data: sampleData } = await supabase
             .from('search_results')
             .select('*')
             .limit(5);
-          
-          if (allError) {
-            console.error("Error fetching sample results:", allError);
+            
+          console.log("Sample data from search_results:", sampleData);
+          if (sampleData && sampleData.length > 0) {
+            console.log("Available titles in search_results:", 
+              sampleData.map(r => ({ title: r.title, type: r.type }))
+            );
           } else {
-            console.log("Sample from search_results view:", allResults);
-            if (allResults && allResults.length > 0) {
-              console.log("Available titles:", allResults.map(r => r.title));
-            } else {
-              console.log("No data found in search_results view. Ensure the view is populated.");
-            }
+            console.log("No data found in search_results view");
           }
+          return [];
         }
+        
+        console.log(`Found ${data.length} results for "${searchTerm}":`);
+        console.log("Search results:", data);
         
         return data as SearchResult[];
       } catch (err) {
