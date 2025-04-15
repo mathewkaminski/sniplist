@@ -19,7 +19,8 @@ export function useSniplistsData(userId?: string) {
   const [noSniplists, setNoSniplists] = useState(false);
 
   useEffect(() => {
-    if (userId) {
+    // Avoid querying with an invalid userId like ":userId"
+    if (userId && userId !== ":userId") {
       console.log('Detected userId in URL:', userId);
       checkUserAccess(userId);
     } else {
