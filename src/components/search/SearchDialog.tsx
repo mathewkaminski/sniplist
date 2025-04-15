@@ -55,40 +55,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         onOpenChange(isOpen);
       }}
     >
-      <DialogContent className="overflow-hidden p-0 max-w-md">
-        <DialogTitle className="sr-only">Search</DialogTitle>
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <SearchIcon className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <CommandInput
-              placeholder="Search sniplists and users..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-              className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              autoFocus
-            />
-          </div>
-
-          {/* Render based on state to avoid issues inside CommandList */}
-          {isLoading ? (
-            <CommandList className="max-h-[300px] overflow-y-auto">
-              <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
-            </CommandList>
-          ) : hasMinimumChars && results.length > 0 ? (
-            <CommandList className="max-h-[300px] overflow-y-auto">
-              <CommandGroup heading="Test Group">
-                <CommandItem onSelect={() => console.log("Clicked")} className="flex items-center gap-2">
-                  <span>Alvvvays</span>
-                  <Badge variant="outline" className="ml-auto">sniplist</Badge>
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          ) : (
-            <CommandList className="max-h-[300px] overflow-y-auto">
-              <CommandEmpty>No results found.</CommandEmpty>
-            </CommandList>
-          )}
-        </Command>
+      <DialogContent className="p-6 bg-white">
+        <h1 className="text-xl font-bold">Hello, world</h1>
+        <p>This should be visible if the Dialog is open.</p>
       </DialogContent>
     </Dialog>
   );
