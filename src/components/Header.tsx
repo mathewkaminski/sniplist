@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
@@ -15,9 +16,9 @@ export function Header() {
   };
 
   const handleMySniplists = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      navigate(`/user/${user.id}/sniplists`);
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      navigate(`/user/${data.user.id}/sniplists`);
     } else {
       navigate("/auth");
     }

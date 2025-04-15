@@ -8,7 +8,8 @@ import { AlertTriangle } from "lucide-react";
 
 export default function Sniplists() {
   const { userId } = useParams<{ userId: string }>();
-
+  
+  // Log the actual userId value from params
   console.log("Loaded sniplists for userId:", userId);
 
   const {
