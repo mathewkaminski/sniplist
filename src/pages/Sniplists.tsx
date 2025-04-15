@@ -26,6 +26,7 @@ export default function Sniplists() {
     const userId = searchParams.get('userId');
     
     if (userId) {
+      console.log('Detected userId in URL:', userId);
       checkUserAccess(userId);
     } else {
       fetchSniplists();
@@ -36,8 +37,11 @@ export default function Sniplists() {
     try {
       // Check if this is the current logged-in user
       const { data: authData } = await supabase.auth.getUser();
+      console.log('Auth data:', authData);
+      
       const isCurrentUser = authData.user?.id === userId;
       setIsCurrentUser(isCurrentUser);
+      console.log('Is current user:', isCurrentUser);
 
       // Get the user's profile to check privacy settings and fetch username
       const { data: profileData, error: profileError } = await supabase
@@ -46,20 +50,30 @@ export default function Sniplists() {
         .eq('id', userId)
         .single();
       
-      if (profileError) throw profileError;
+      console.log('Profile data:', profileData, 'Error:', profileError);
+      
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
       if (profileData) {
         setUsername(profileData.username || 'User');
         
         // If it's not the current user and the profile is private, mark it as private
-        if (!isCurrentUser && !profileData.is_public) {
+        if (!isCurrentUser && profileData.is_public === false) {
+          console.log('Profile is private, blocking access');
           setIsPrivate(true);
           setLoading(false);
           return;
         }
         
         // Otherwise, fetch the user's sniplists
+        console.log('Access granted, fetching sniplists');
         fetchUserSniplists(userId);
+      } else {
+        console.log('No profile found for user:', userId);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error checking user access:', error);
@@ -97,11 +111,15 @@ export default function Sniplists() {
   const fetchUserSniplists = async (userId: string) => {
     try {
       setLoading(true);
+      console.log('Fetching sniplists for user:', userId);
+      
       const { data, error } = await supabase
         .from('sniplists')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
+      
+      console.log('Sniplists data:', data, 'Error:', error);
       
       if (error) throw error;
       setSniplists(data || []);
