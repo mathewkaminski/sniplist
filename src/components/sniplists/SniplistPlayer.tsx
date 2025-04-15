@@ -86,6 +86,7 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
                 videoId={snippet.video_id}
                 startTime={snippet.start_time}
                 endTime={snippet.end_time}
+                autoplay={true}
               />
               <div className="mt-2">
                 <p className="text-sm font-medium truncate max-w-[200px]">

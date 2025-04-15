@@ -7,9 +7,10 @@ interface SnippetPlayerProps {
   videoId: string;
   startTime: number;
   endTime: number;
+  autoplay?: boolean;
 }
 
-export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProps) {
+export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false }: SnippetPlayerProps) {
   const [player, setPlayer] = useState<YT.Player | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
       const newPlayer = new window.YT.Player(playerId, {
         videoId: videoId,
         playerVars: {
-          autoplay: 0,
+          autoplay: autoplay ? 1 : 0,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -84,10 +85,13 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
           start: Math.floor(startTime)
         },
         events: {
-          // Fix the type error by adding event parameter
           onReady: (event: YT.PlayerEvent) => {
             console.log("Snippet player ready for video:", videoId);
             setPlayer(event.target);
+            if (autoplay) {
+              event.target.playVideo();
+              setIsPlaying(true);
+            }
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
             if (event.data === YT.PlayerState.PLAYING) {
