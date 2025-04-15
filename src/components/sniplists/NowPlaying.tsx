@@ -1,3 +1,4 @@
+
 import { ListMusic, ExternalLink } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
 import { useEffect } from "react";
 import { getYoutubeVideoUrl } from "@/utils/youtube";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NowPlayingProps {
   currentSnippet: Snippet;
@@ -35,7 +36,7 @@ export function NowPlaying({
 
         await supabase.from('sniplist_plays').insert({
           user_id: user.id,
-          sniplist_id: snippets[0].sniplist_id,
+          sniplist_id: snippets[0].sniplist_id || null, // Use optional chaining and provide a fallback
           completed_songs: currentSnippetIndex
         });
       };
