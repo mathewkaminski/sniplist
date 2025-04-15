@@ -1,6 +1,12 @@
-
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem
+} from "@/components/ui/command";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
 import { SearchIcon } from "lucide-react";
@@ -17,7 +23,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Debug logs for component state
   useEffect(() => {
     console.log("SearchDialog state:", {
       searchTerm,
@@ -42,8 +47,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) setSearchTerm('');
         onOpenChange(isOpen);
@@ -62,28 +67,32 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               autoFocus
             />
           </div>
+
           <CommandList className="max-h-[300px] overflow-y-auto">
-            <CommandGroup heading="All Results">
-              {Array.isArray(results) && results.length > 0 ? (
-                results.map((result) => {
-                  console.log("🧪 Rendering result:", result);
-                  return (
-                    <CommandItem
-                      key={`${result.type}-${result.id}`}
-                      onSelect={() => handleSelect(result)}
-                      className="flex items-center gap-2"
-                    >
-                      <span>{result.title}</span>
-                      <Badge variant="outline" className="ml-auto">{result.type}</Badge>
-                    </CommandItem>
-                  );
-                })
-              ) : (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  No results to show.
-                </div>
-              )}
-            </CommandGroup>
+            {isLoading && (
+              <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
+            )}
+
+            {!isLoading && hasMinimumChars && results.length > 0 && (
+              <CommandGroup heading="All Results">
+                {results.map((result) => (
+                  <CommandItem
+                    key={`${result.type}-${result.id}`}
+                    onSelect={() => handleSelect(result)}
+                    className="flex items-center gap-2"
+                  >
+                    <span>{result.title}</span>
+                    <Badge variant="outline" className="ml-auto">
+                      {result.type}
+                    </Badge>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isLoading && hasMinimumChars && results.length === 0 && (
+              <CommandEmpty>No results found.</CommandEmpty>
+            )}
           </CommandList>
         </Command>
       </DialogContent>

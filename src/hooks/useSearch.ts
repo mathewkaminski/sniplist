@@ -33,6 +33,7 @@ export function useSearch() {
       }
 
       if (data && Array.isArray(data.data)) {
+        console.log("✅ Received search results:", data.data);
         return data.data as SearchResult[];
       }
 
