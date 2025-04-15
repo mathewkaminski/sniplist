@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SearchResult {
@@ -12,7 +13,6 @@ export interface SearchResult {
 export function useSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const MIN_SEARCH_LENGTH = 3;
-  const queryClient = useQueryClient();
 
   const { data = [], isLoading, refetch } = useQuery({
     queryKey: ["search"],
@@ -20,26 +20,25 @@ export function useSearch() {
       const trimmedTerm = searchTerm.trim();
       if (trimmedTerm.length < MIN_SEARCH_LENGTH) return [];
 
-      console.log("🔍 Invoking search_sniplists with term:", trimmedTerm);
+      console.log("🔍 Calling Edge Function with term:", trimmedTerm);
 
       const { data, error } = await supabase.functions.invoke("search_sniplists", {
         body: { searchTerm: `%${trimmedTerm}%` },
       });
 
       if (error) {
-        console.error("❌ Supabase Edge Function error:", error);
+        console.error("❌ Edge Function error:", error);
         return [];
       }
 
       if (data && Array.isArray(data.data)) {
-        console.log("✅ Results:", data.data);
         return data.data as SearchResult[];
       }
 
-      console.warn("⚠️ Unexpected data format:", data);
+      console.warn("⚠️ Unexpected search format:", data);
       return [];
     },
-    enabled: false, // prevent auto-run
+    enabled: false, // Prevent auto-run, we'll manually trigger with refetch
   });
 
   // Manually trigger the search when the term changes
