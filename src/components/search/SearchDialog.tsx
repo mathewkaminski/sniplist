@@ -3,10 +3,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
-import { Users, ListMusic, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useEffect } from "react";
 
 interface SearchDialogProps {
@@ -18,47 +17,38 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Debug logging for component state and raw results
+  // Debug logs for component state
   useEffect(() => {
-    console.log("SearchDialog state:", { 
-      searchTerm, 
-      resultsCount: results?.length || 0, 
-      isLoading, 
-      hasMinimumChars 
+    console.log("SearchDialog state:", {
+      searchTerm,
+      resultsCount: results?.length || 0,
+      isLoading,
+      hasMinimumChars,
+      results
     });
   }, [searchTerm, results, isLoading, hasMinimumChars]);
 
-  console.log("🎯 Raw results from useSearch:", results);
-
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
-    setSearchTerm(''); // Reset search term when selecting a result
-    
+    setSearchTerm('');
+
     if (result.type.toLowerCase() === 'profile') {
       navigate(`/profile/${result.id}`);
-      toast.success(`Viewing profile`);
+      toast.success('Viewing profile');
     } else {
       navigate(`/sniplists?play=${result.id}`);
-      toast.success(`Playing sniplist`);
+      toast.success('Playing sniplist');
     }
   };
 
-  // Make sure results is always an array before filtering
-  const safeResults = Array.isArray(results) ? results : [];
-  
-  // Group results by type with case-insensitive comparison
-  const profileResults = safeResults.filter(result => 
-    result.type?.toLowerCase() === 'profile'
-  );
-  const sniplistResults = safeResults.filter(result => 
-    result.type?.toLowerCase() === 'sniplist'
-  );
-
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) setSearchTerm(''); // Clear search when closing dialog
-      onOpenChange(isOpen);
-    }}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen) setSearchTerm('');
+        onOpenChange(isOpen);
+      }}
+    >
       <DialogContent className="overflow-hidden p-0 max-w-md">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <Command>
@@ -72,20 +62,29 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               autoFocus
             />
           </div>
-          <CommandList>
-           <CommandGroup heading="All Results">
-            {safeResults.map((result) => (
-              <CommandItem
-                key={`${result.type}-${result.id}`}
-                onSelect={() => handleSelect(result)}
-                className="flex items-center gap-2"
-              >
-                <span>{result.title}</span>
-                <Badge variant="outline" className="ml-auto">{result.type}</Badge>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
+          <CommandList className="max-h-[300px] overflow-y-auto">
+            <CommandGroup heading="All Results">
+              {Array.isArray(results) && results.length > 0 ? (
+                results.map((result) => {
+                  console.log("🧪 Rendering result:", result);
+                  return (
+                    <CommandItem
+                      key={`${result.type}-${result.id}`}
+                      onSelect={() => handleSelect(result)}
+                      className="flex items-center gap-2"
+                    >
+                      <span>{result.title}</span>
+                      <Badge variant="outline" className="ml-auto">{result.type}</Badge>
+                    </CommandItem>
+                  );
+                })
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No results to show.
+                </div>
+              )}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </DialogContent>
     </Dialog>
