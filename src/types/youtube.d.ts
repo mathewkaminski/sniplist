@@ -18,11 +18,28 @@ declare namespace YT {
     CUED = 5
   }
 
+  interface PlayerEvent {
+    target: Player;
+  }
+
+  interface OnStateChangeEvent {
+    data: PlayerState;
+  }
+
   interface PlayerOptions {
     videoId: string;
+    playerVars?: {
+      autoplay?: number;
+      controls?: number;
+      disablekb?: number;
+      fs?: number;
+      rel?: number;
+      modestbranding?: number;
+      start?: number;
+    };
     events?: {
-      onReady?: () => void;
-      onStateChange?: (event: { data: PlayerState }) => void;
+      onReady?: (event: PlayerEvent) => void;
+      onStateChange?: (event: OnStateChangeEvent) => void;
     };
   }
 
