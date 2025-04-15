@@ -20,11 +20,20 @@ export function useSearch() {
       if (!searchTerm || searchTerm.trim().length < MIN_SEARCH_LENGTH) return [];
       
       try {
-        console.log("Executing search with term:", searchTerm.trim());
+        // Log auth status to check if we're authenticated
+        const { data: authData } = await supabase.auth.getUser();
+        console.log("Current auth status:", authData?.user ? "Authenticated" : "Not authenticated");
+        
+        const searchTermTrimmed = searchTerm.trim();
+        console.log("Executing search with term:", searchTermTrimmed);
+        
+        // First try a simple query to see if it returns anything
+        console.log("Running search with pattern:", `%${searchTermTrimmed}%`);
+        
         const { data, error } = await supabase
           .from('search_results')
           .select('*')
-          .ilike('title', `%${searchTerm.trim()}%`)
+          .ilike('title', `%${searchTermTrimmed}%`)
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -34,9 +43,26 @@ export function useSearch() {
         }
         
         if (!data || data.length === 0) {
-          console.log("No results found for search term:", searchTerm.trim());
+          console.log(`No results found for "${searchTermTrimmed}" using ilike.`);
           
-          // Debug: Check what data exists in the view
+          // Try a less restrictive query with LIKE to see if that works
+          console.log("Trying fallback with simple like:", `%${searchTermTrimmed.charAt(0)}%`);
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('search_results')
+            .select('*')
+            .like('title', `%${searchTermTrimmed.charAt(0)}%`)
+            .limit(5);
+            
+          if (fallbackError) {
+            console.error('Fallback search error:', fallbackError);
+          } else if (fallbackData && fallbackData.length > 0) {
+            console.log("Fallback search returned data:", fallbackData);
+            console.log("Available titles in fallback search:", 
+              fallbackData.map(r => ({ title: r.title, type: r.type }))
+            );
+          }
+          
+          // Get a sample of data to see what's in the view
           const { data: sampleData } = await supabase
             .from('search_results')
             .select('*')
@@ -50,10 +76,11 @@ export function useSearch() {
           } else {
             console.log("No data found in search_results view");
           }
+          
           return [];
         }
         
-        console.log(`Found ${data.length} results for "${searchTerm}":`);
+        console.log(`Found ${data.length} results for "${searchTermTrimmed}":`);
         console.log("Search results:", data);
         
         return data as SearchResult[];
