@@ -84,11 +84,12 @@ export function SnippetPlayer({ videoId, startTime, endTime }: SnippetPlayerProp
           start: Math.floor(startTime)
         },
         events: {
-          onReady: (event) => {
+          // Fix the type error by adding event parameter
+          onReady: (event: YT.PlayerEvent) => {
             console.log("Snippet player ready for video:", videoId);
             setPlayer(event.target);
           },
-          onStateChange: (event) => {
+          onStateChange: (event: YT.OnStateChangeEvent) => {
             if (event.data === YT.PlayerState.PLAYING) {
               setIsPlaying(true);
             } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {

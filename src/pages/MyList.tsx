@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,12 +40,18 @@ export default function MyList() {
       
       if (error) throw error;
 
+      // Only fetch YouTube titles for snippets that don't have a custom title set
       const snippetsWithTitles = await Promise.all(
         (data || []).map(async (snippet) => {
+          // If the title is just showing time range, it's likely a default title
+          const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+          
           try {
-            const youtubeTitle = await fetchVideoTitle(snippet.video_id);
+            const youtubeTitle = isDefaultTitle ? await fetchVideoTitle(snippet.video_id) : null;
             return {
               ...snippet,
+              // If it's a default title and we got a YouTube title, use that
+              title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
               youtube_title: youtubeTitle
             };
           } catch (err) {
