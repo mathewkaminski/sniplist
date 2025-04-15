@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SniplistsList } from "@/components/sniplists/SniplistsList";
 
 interface Sniplist {
   id: string;
@@ -43,19 +44,7 @@ export default function Sniplists() {
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">My Sniplists</h1>
-          {loading ? (
-            <p>Loading sniplists...</p>
-          ) : sniplists.length === 0 ? (
-            <p className="text-gray-500">No sniplists created yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {sniplists.map((sniplist) => (
-                <div key={sniplist.id} className="p-4 border rounded-lg">
-                  <h2 className="text-xl font-semibold">{sniplist.title}</h2>
-                </div>
-              ))}
-            </div>
-          )}
+          <SniplistsList sniplists={sniplists} loading={loading} />
         </div>
       </main>
     </div>
