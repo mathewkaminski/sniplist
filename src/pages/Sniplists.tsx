@@ -1,10 +1,11 @@
-
 import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SniplistsList } from "@/components/sniplists/SniplistsList";
 import { useSearchParams } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface Sniplist {
   id: string;
@@ -18,47 +19,77 @@ export default function Sniplists() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const [username, setUsername] = useState<string | null>(null);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   useEffect(() => {
     const userId = searchParams.get('userId');
     
     if (userId) {
-      fetchUserProfile(userId);
-      fetchUserSniplists(userId);
+      checkUserAccess(userId);
     } else {
       fetchSniplists();
     }
   }, [searchParams]);
 
-  const fetchUserProfile = async (userId: string) => {
+  const checkUserAccess = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Check if this is the current logged-in user
+      const { data: authData } = await supabase.auth.getUser();
+      const isCurrentUser = authData.user?.id === userId;
+      setIsCurrentUser(isCurrentUser);
+
+      // Get the user's profile to check privacy settings and fetch username
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, is_public')
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
-      setUsername(data.username || 'User');
+      if (profileError) throw profileError;
+
+      if (profileData) {
+        setUsername(profileData.username || 'User');
+        
+        // If it's not the current user and the profile is private, mark it as private
+        if (!isCurrentUser && !profileData.is_public) {
+          setIsPrivate(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise, fetch the user's sniplists
+        fetchUserSniplists(userId);
+      }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error checking user access:', error);
+      setLoading(false);
     }
   };
 
   const fetchSniplists = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('sniplists')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: authData } = await supabase.auth.getUser();
       
-      if (error) throw error;
-      setSniplists(data || []);
+      if (authData.user) {
+        // If user is logged in, fetch current user's sniplists
+        setIsCurrentUser(true);
+        fetchUserSniplists(authData.user.id);
+      } else {
+        // If not logged in, fetch public sniplists
+        const { data, error } = await supabase
+          .from('sniplists')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        setSniplists(data || []);
+        setLoading(false);
+      }
     } catch (error: any) {
       console.error('Error fetching sniplists:', error);
       toast.error(`Failed to load sniplists: ${error.message}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -105,13 +136,24 @@ export default function Sniplists() {
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">
-            {username ? `${username}'s Sniplists` : 'My Sniplists'}
+            {isCurrentUser ? 'My Sniplists' : username ? `${username}'s Sniplists` : 'Sniplists'}
           </h1>
-          <SniplistsList 
-            sniplists={sniplists} 
-            loading={loading} 
-            onDelete={handleDelete} 
-          />
+          
+          {isPrivate ? (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Private Profile</AlertTitle>
+              <AlertDescription>
+                This user's profile is private. You cannot view their sniplists.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <SniplistsList 
+              sniplists={sniplists} 
+              loading={loading} 
+              onDelete={isCurrentUser ? handleDelete : undefined} 
+            />
+          )}
         </div>
       </main>
     </div>
