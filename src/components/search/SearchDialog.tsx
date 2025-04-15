@@ -5,7 +5,7 @@ import {
   CommandList,
   CommandEmpty,
   CommandGroup,
-  CommandItem
+  CommandItem,
 } from "@/components/ui/command";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
@@ -23,26 +23,27 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
+  // Debug logging for inspection
   useEffect(() => {
     console.log("SearchDialog state:", {
       searchTerm,
       resultsCount: results?.length || 0,
       isLoading,
       hasMinimumChars,
-      results
+      results,
     });
   }, [searchTerm, results, isLoading, hasMinimumChars]);
 
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
-    setSearchTerm('');
+    setSearchTerm("");
 
-    if (result.type.toLowerCase() === 'profile') {
+    if (result.type.toLowerCase() === "profile") {
       navigate(`/profile/${result.id}`);
-      toast.success('Viewing profile');
+      toast.success("Viewing profile");
     } else {
       navigate(`/sniplists?play=${result.id}`);
-      toast.success('Playing sniplist');
+      toast.success("Playing sniplist");
     }
   };
 
@@ -50,7 +51,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        if (!isOpen) setSearchTerm('');
+        if (!isOpen) setSearchTerm("");
         onOpenChange(isOpen);
       }}
     >
@@ -68,14 +69,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
 
-          <CommandList className="max-h-[300px] overflow-y-auto">
-            {/* Show loading message */}
-            {isLoading && (
+          {/* Render based on state to avoid issues inside CommandList */}
+          {isLoading ? (
+            <CommandList className="max-h-[300px] overflow-y-auto">
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
-            )}
-          
-            {/* Show results if available */}
-            {!isLoading && hasMinimumChars && results.length > 0 && (
+            </CommandList>
+          ) : hasMinimumChars && results.length > 0 ? (
+            <CommandList className="max-h-[300px] overflow-y-auto">
               <CommandGroup heading="All Results">
                 {results.map((result) => (
                   <CommandItem
@@ -90,11 +90,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   </CommandItem>
                 ))}
               </CommandGroup>
-            )}
-          
-            {/* Always render CommandEmpty inside CommandList */}
-            <CommandEmpty>No results found.</CommandEmpty>
-          </CommandList>
+            </CommandList>
+          ) : (
+            <CommandList className="max-h-[300px] overflow-y-auto">
+              <CommandEmpty>No results found.</CommandEmpty>
+            </CommandList>
+          )}
         </Command>
       </DialogContent>
     </Dialog>
