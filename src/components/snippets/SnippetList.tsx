@@ -1,4 +1,3 @@
-
 import { 
   Table, 
   TableHeader, 
@@ -17,12 +16,12 @@ import { getYoutubeVideoUrl } from "@/utils/youtube";
 interface Snippet {
   id: string;
   title: string;
-  comments?: string;
   video_id: string;
   start_time: number;
   end_time: number;
   created_at: string;
   youtube_title?: string;
+  uploader?: string;
 }
 
 interface SnippetListProps {
@@ -48,7 +47,7 @@ export function SnippetList({
         <TableRow>
           {isSelecting && <TableHead className="w-16">Select</TableHead>}
           <TableHead>Title</TableHead>
-          <TableHead>Comments</TableHead>
+          <TableHead>Uploader</TableHead>
           <TableHead>Audio</TableHead>
           <TableHead>Time Range</TableHead>
           <TableHead className="w-24 text-right">Created</TableHead>
@@ -84,11 +83,8 @@ export function SnippetList({
                 </TooltipContent>
               </Tooltip>
             </TableCell>
-            <TableCell 
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => onEdit(snippet)}
-            >
-              {snippet.comments || '-'}
+            <TableCell>
+              {snippet.uploader || 'Unknown'}
             </TableCell>
             <TableCell>
               <SnippetPlayer 

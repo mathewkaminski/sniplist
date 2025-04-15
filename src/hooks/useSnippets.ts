@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Snippet } from "@/components/snippets/types";
-import { fetchVideoTitle } from "@/utils/youtube";
+import { fetchVideoData } from "@/utils/youtube";
 
 export function useSnippets() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -30,33 +29,26 @@ export function useSnippets() {
       
       if (error) throw error;
 
-      const snippetsWithTitles = await Promise.all(
+      const snippetsWithData = await Promise.all(
         (data || []).map(async (snippet) => {
-          const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
-          
           try {
-            let youtubeTitle = null;
-            
-            if (isDefaultTitle) {
-              youtubeTitle = await fetchVideoTitle(snippet.video_id);
-            }
-            
+            const videoData = await fetchVideoData(snippet.video_id);
             return {
               ...snippet,
-              title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
-              youtube_title: youtubeTitle
+              title: snippet.title,
+              uploader: videoData.uploader
             };
           } catch (err) {
-            console.error(`Failed to fetch title for ${snippet.video_id}:`, err);
+            console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
             return {
               ...snippet,
-              youtube_title: 'Untitled Video'
+              uploader: 'Unknown'
             };
           }
         })
       );
       
-      setSnippets(snippetsWithTitles);
+      setSnippets(snippetsWithData);
     } catch (error: any) {
       console.error('Error fetching snippets:', error);
       toast.error(`Failed to load snippets: ${error.message}`);
