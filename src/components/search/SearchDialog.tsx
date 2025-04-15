@@ -1,4 +1,3 @@
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Command,
   CommandInput,
@@ -7,12 +6,11 @@ import {
   CommandGroup,
   CommandItem,
 } from "@/components/ui/command";
-import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
-import { SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useEffect } from "react";
+import { useSearch } from "@/hooks/useSearch";
 
 interface SearchDialogProps {
   open: boolean;
@@ -23,7 +21,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Debug logging for inspection
   useEffect(() => {
     console.log("SearchDialog state:", {
       searchTerm,
@@ -47,18 +44,27 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
   };
 
+  // ✅ Only show content if open
+  if (!open) return null;
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) setSearchTerm("");
-        onOpenChange(isOpen);
-      }}
-    >
-      <DialogContent className="p-6 bg-white">
-        <h1 className="text-xl font-bold">Hello, world</h1>
-        <p>This should be visible if the Dialog is open.</p>
-      </DialogContent>
-    </Dialog>
+    <div className="p-6 border rounded bg-white shadow-md">
+      <h2 className="font-semibold mb-4">Testing the inside</h2>
+      <Command>
+        <CommandList className="max-h-[300px] overflow-y-auto border bg-gray-100">
+          <CommandGroup heading="Test Group">
+            <CommandItem
+              onSelect={() => console.log("Clicked")}
+              className="flex items-center gap-2"
+            >
+              <span>Alvvvays</span>
+              <Badge variant="outline" className="ml-auto">
+                sniplist
+              </Badge>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </div>
   );
 }
