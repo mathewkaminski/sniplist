@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface SearchResult {
+export interface SearchResult {
   type: 'profile' | 'sniplist';
   title: string;
   id: string;
@@ -12,32 +12,39 @@ interface SearchResult {
 
 export function useSearch() {
   const [searchTerm, setSearchTerm] = useState('');
+  const MIN_SEARCH_LENGTH = 3;
 
   const { data: results = [], isLoading } = useQuery({
     queryKey: ['search', searchTerm],
     queryFn: async () => {
-      if (!searchTerm.trim()) return [];
+      if (!searchTerm || searchTerm.trim().length < MIN_SEARCH_LENGTH) return [];
       
-      const { data, error } = await supabase
-        .from('search_results')
-        .select('*')
-        .ilike('title', `%${searchTerm}%`)
-        .limit(10);
+      try {
+        const { data, error } = await supabase
+          .from('search_results')
+          .select('*')
+          .ilike('title', `%${searchTerm}%`)
+          .limit(10);
 
-      if (error) {
-        console.error('Search error:', error);
+        if (error) {
+          console.error('Search error:', error);
+          return [];
+        }
+        
+        return data as SearchResult[];
+      } catch (err) {
+        console.error('Unexpected search error:', err);
         return [];
       }
-      
-      return data as SearchResult[];
     },
-    enabled: searchTerm.trim().length > 0
+    enabled: searchTerm.trim().length >= MIN_SEARCH_LENGTH
   });
 
   return {
     searchTerm,
     setSearchTerm,
-    results: results || [],
-    isLoading
+    results,
+    isLoading,
+    hasMinimumChars: searchTerm.trim().length >= MIN_SEARCH_LENGTH
   };
 }
