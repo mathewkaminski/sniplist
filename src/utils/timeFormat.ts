@@ -7,10 +7,7 @@ export const formatTimeDisplay = (seconds: number): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const remainingSeconds = totalSeconds % 60;
   
-  // Format as mm:ss or just ss if less than a minute
-  if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  } else {
-    return `${remainingSeconds}s`;
-  }
+  // Always format as mm:ss
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
+
