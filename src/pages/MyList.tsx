@@ -1,25 +1,12 @@
-
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SnippetList } from "@/components/snippets/SnippetList";
+import { Snippet } from "@/components/snippets/types";
 import { EditTitleDialog } from "@/components/snippets/EditTitleDialog";
 import { CreateSniplistDialog } from "@/components/snippets/CreateSniplistDialog";
-import { Button } from "@/components/ui/button";
-import { Plus, Check } from "lucide-react";
+import { MySnippetsList } from "@/components/snippets/MySnippetsList";
 import { fetchVideoTitle } from "@/utils/youtube";
-
-interface Snippet {
-  id: string;
-  title: string;
-  artist?: string;
-  video_id: string;
-  start_time: number;
-  end_time: number;
-  created_at: string;
-  youtube_title?: string;
-}
 
 export default function MyList() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -48,20 +35,17 @@ export default function MyList() {
 
       const snippetsWithTitles = await Promise.all(
         (data || []).map(async (snippet) => {
-          // Check if the title is the default format that uses timestamps
           const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
           
           try {
             let youtubeTitle = null;
             
-            // Only fetch YouTube title if the current title is the default one
             if (isDefaultTitle) {
               youtubeTitle = await fetchVideoTitle(snippet.video_id);
             }
             
             return {
               ...snippet,
-              // If it's a default title and we got a YouTube title, use that instead
               title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
               youtube_title: youtubeTitle
             };
@@ -138,6 +122,11 @@ export default function MyList() {
     setDialogOpen(true);
   };
 
+  const handleCreateSniplistSuccess = () => {
+    setIsSelecting(false);
+    setSelectedSnippets([]);
+  };
+
   const toggleSnippetSelection = (id: string) => {
     setSelectedSnippets(prev => 
       prev.includes(id) 
@@ -146,63 +135,25 @@ export default function MyList() {
     );
   };
 
-  const handleCreateSniplistSuccess = () => {
-    setIsSelecting(false);
-    setSelectedSnippets([]);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">My Snippets</h1>
-              <div className="flex gap-2">
-                {isSelecting ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsSelecting(false);
-                        setSelectedSnippets([]);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={() => setCreateSniplistOpen(true)}
-                      disabled={selectedSnippets.length === 0}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Create Sniplist ({selectedSnippets.length})
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsSelecting(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create a Sniplist
-                  </Button>
-                )}
-              </div>
-            </div>
-            {loading ? (
-              <p>Loading snippets...</p>
-            ) : snippets.length === 0 ? (
-              <p className="text-gray-500">No snippets saved yet.</p>
-            ) : (
-              <SnippetList 
-                snippets={snippets}
-                onDelete={handleDelete}
-                onEdit={openEditDialog}
-                isSelecting={isSelecting}
-                selectedSnippets={selectedSnippets}
-                onSnippetSelect={toggleSnippetSelection}
-              />
-            )}
-          </div>
-        </div>
+        <MySnippetsList 
+          snippets={snippets}
+          loading={loading}
+          onDelete={handleDelete}
+          onEdit={openEditDialog}
+          isSelecting={isSelecting}
+          selectedSnippets={selectedSnippets}
+          onSnippetSelect={toggleSnippetSelection}
+          onCreateSniplist={() => setCreateSniplistOpen(true)}
+          onCancelSelection={() => {
+            setIsSelecting(false);
+            setSelectedSnippets([]);
+          }}
+          onStartSelection={() => setIsSelecting(true)}
+        />
       </main>
 
       <EditTitleDialog
