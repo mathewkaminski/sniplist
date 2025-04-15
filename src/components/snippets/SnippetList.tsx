@@ -1,7 +1,10 @@
 
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash, CheckCircle } from "lucide-react";
+import { Pencil, Trash, CheckCircle, ExternalLink } from "lucide-react";
+import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Snippet } from "./types";
+import { formatTimeDisplay } from "@/utils/timeFormat";
+import { getYoutubeVideoUrl } from "@/utils/youtube";
 import {
   Table,
   TableBody,
@@ -33,6 +36,7 @@ export function SnippetList({
       <TableHeader>
         <TableRow>
           {isSelecting && <TableHead className="w-[50px]">Select</TableHead>}
+          <TableHead>Player</TableHead>
           <TableHead>Title</TableHead>
           <TableHead>Uploader</TableHead>
           <TableHead>Start Time</TableHead>
@@ -62,10 +66,17 @@ export function SnippetList({
                 </Button>
               </TableCell>
             )}
+            <TableCell>
+              <SnippetPlayer
+                videoId={snippet.video_id}
+                startTime={snippet.start_time}
+                endTime={snippet.end_time}
+              />
+            </TableCell>
             <TableCell className="font-medium">{snippet.title}</TableCell>
             <TableCell>{snippet.uploader || "Unknown"}</TableCell>
-            <TableCell>{snippet.start_time}s</TableCell>
-            <TableCell>{snippet.end_time}s</TableCell>
+            <TableCell>{formatTimeDisplay(snippet.start_time)}</TableCell>
+            <TableCell>{formatTimeDisplay(snippet.end_time)}</TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 <Button
@@ -82,6 +93,14 @@ export function SnippetList({
                 >
                   <Trash className="h-4 w-4" />
                 </Button>
+                <a 
+                  href={getYoutubeVideoUrl(snippet.video_id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-10 w-10 items-center justify-center whitespace-nowrap rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               </div>
             </TableCell>
           </TableRow>
