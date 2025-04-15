@@ -34,14 +34,18 @@ export const useSniplistPlayback = (sniplistId: string) => {
   }, [currentSnippetIndex, snippets.length]);
 
   useEffect(() => {
-    if (!playlistComplete) {
-      if (snippetTimer.current) {
-        clearTimeout(snippetTimer.current);
-      }
+    // Clear previous timer when changing snippets or when playlist completes
+    if (snippetTimer.current) {
+      clearTimeout(snippetTimer.current);
+      snippetTimer.current = null;
+    }
 
+    // Only set a new timer if the playlist isn't complete
+    if (!playlistComplete && snippets.length > 0) {
+      console.log(`Setting timer for snippet ${currentSnippetIndex + 1} of ${snippets.length}`);
+      
       snippetTimer.current = setTimeout(() => {
         console.log("20 seconds elapsed, advancing to next snippet");
-        shouldAdvance.current = true;
         advanceToNextSnippet();
       }, 20000);
 
@@ -51,12 +55,16 @@ export const useSniplistPlayback = (sniplistId: string) => {
         }
       };
     }
-  }, [currentSnippetIndex, playlistComplete]);
+  }, [currentSnippetIndex, playlistComplete, snippets.length]);
 
   const advanceToNextSnippet = () => {
+    console.log(`Advancing from snippet ${currentSnippetIndex} to ${currentSnippetIndex + 1}, total: ${snippets.length}`);
+    
     if (currentSnippetIndex < snippets.length - 1) {
       setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+      console.log(`Advanced to snippet ${currentSnippetIndex + 1}`);
     } else {
+      console.log("Reached end of playlist");
       setPlaylistComplete(true);
       toast.success("Playlist complete!");
     }
@@ -104,7 +112,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
   const handleSnippetEnd = () => {
     console.log("Snippet ended, current index:", currentSnippetIndex, "total snippets:", snippets.length);
-    shouldAdvance.current = true;
+    advanceToNextSnippet();
   };
 
   const handleRestartPlaylist = () => {

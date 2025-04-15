@@ -4,6 +4,7 @@ import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
 import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
+import { useEffect } from "react";
 
 interface NowPlayingProps {
   currentSnippet: Snippet;
@@ -24,14 +25,22 @@ export function NowPlaying({
   onSnippetSelect,
   setPlaylistComplete
 }: NowPlayingProps) {
+  // Log when the component renders with a new snippet
+  useEffect(() => {
+    console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
+  }, [currentSnippet, currentSnippetIndex, snippets.length]);
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
       <div className="container mx-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ListMusic className="h-5 w-5 text-purple-700" />
             <span className="font-medium">
-              Now Playing: {currentSnippet.title || 'Untitled'}
+              Now Playing: {currentSnippet.title || 'Untitled'} 
+              <span className="text-gray-500 text-sm ml-2">
+                ({currentSnippetIndex + 1}/{snippets.length})
+              </span>
             </span>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -76,4 +85,3 @@ export function NowPlaying({
     </div>
   );
 }
-
