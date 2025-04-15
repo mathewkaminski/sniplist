@@ -5,6 +5,7 @@ import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
 import { useEffect } from "react";
 import { getYoutubeVideoUrl } from "@/utils/youtube";
+import { supabase } from "@/utils/supabase";
 
 interface NowPlayingProps {
   currentSnippet: Snippet;
@@ -25,6 +26,24 @@ export function NowPlaying({
   onSnippetSelect,
   setPlaylistComplete
 }: NowPlayingProps) {
+  useEffect(() => {
+    // Track playlist progress when completed songs >= 2
+    if (currentSnippetIndex >= 2) {
+      const trackPlayProgress = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase.from('sniplist_plays').insert({
+          user_id: user.id,
+          sniplist_id: snippets[0].sniplist_id,
+          completed_songs: currentSnippetIndex
+        });
+      };
+
+      trackPlayProgress();
+    }
+  }, [currentSnippetIndex, snippets]);
+
   useEffect(() => {
     console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
   }, [currentSnippet, currentSnippetIndex, snippets.length]);

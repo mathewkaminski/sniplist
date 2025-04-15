@@ -60,6 +60,13 @@ export type Database = {
             foreignKeyName: "sniplist_items_sniplist_id_fkey"
             columns: ["sniplist_id"]
             isOneToOne: false
+            referencedRelation: "sniplist_stats"
+            referencedColumns: ["sniplist_id"]
+          },
+          {
+            foreignKeyName: "sniplist_items_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
             referencedRelation: "sniplists"
             referencedColumns: ["id"]
           },
@@ -68,6 +75,45 @@ export type Database = {
             columns: ["snippet_id"]
             isOneToOne: false
             referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sniplist_plays: {
+        Row: {
+          completed_songs: number
+          id: string
+          played_at: string | null
+          sniplist_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_songs?: number
+          id?: string
+          played_at?: string | null
+          sniplist_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_songs?: number
+          id?: string
+          played_at?: string | null
+          sniplist_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sniplist_plays_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
+            referencedRelation: "sniplist_stats"
+            referencedColumns: ["sniplist_id"]
+          },
+          {
+            foreignKeyName: "sniplist_plays_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
+            referencedRelation: "sniplists"
             referencedColumns: ["id"]
           },
         ]
@@ -131,7 +177,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      sniplist_stats: {
+        Row: {
+          plays_with_two_songs: number | null
+          sniplist_id: string | null
+          title: string | null
+          total_plays: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
