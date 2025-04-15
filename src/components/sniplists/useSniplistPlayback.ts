@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Snippet } from "./types";
-import { fetchVideoTitle } from "@/utils/youtube";
+import { fetchVideoData } from "@/utils/youtube";
 
 export const useSniplistPlayback = (sniplistId: string) => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -105,21 +105,22 @@ export const useSniplistPlayback = (sniplistId: string) => {
           const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
           
           try {
-            let youtubeTitle = null;
+            let videoData = null;
             
-            // Only fetch YouTube title if the current title is the default one
+            // Only fetch YouTube data if the current title is the default one
             if (isDefaultTitle) {
-              youtubeTitle = await fetchVideoTitle(snippet.video_id);
+              videoData = await fetchVideoData(snippet.video_id);
             }
             
             return {
               ...snippet,
               // If it's a default title and we got a YouTube title, use that instead
-              title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
-              youtube_title: youtubeTitle
+              title: isDefaultTitle && videoData ? videoData.title : snippet.title,
+              youtube_title: videoData?.title,
+              uploader: videoData?.uploader
             };
           } catch (err) {
-            console.error(`Failed to fetch title for ${snippet.video_id}:`, err);
+            console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
             return snippet;
           }
         })
