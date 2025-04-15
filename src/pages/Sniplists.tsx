@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { toast } from "sonner";
 import { SniplistsList } from "@/components/sniplists/SniplistsList";
 import { useSearchParams } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 interface Sniplist {
   id: string;
@@ -21,6 +22,7 @@ export default function Sniplists() {
   const [username, setUsername] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
+  const [noSniplists, setNoSniplists] = useState(false);
 
   useEffect(() => {
     const userId = searchParams.get('userId');
@@ -100,6 +102,10 @@ export default function Sniplists() {
         if (error) throw error;
         setSniplists(data || []);
         setLoading(false);
+        
+        if (data && data.length === 0) {
+          setNoSniplists(true);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching sniplists:', error);
@@ -113,6 +119,12 @@ export default function Sniplists() {
       setLoading(true);
       console.log('Fetching sniplists for user:', userId);
       
+      // Verify the user ID format
+      console.log('User ID format check:', {
+        isValid: typeof userId === 'string' && userId.length > 10,
+        userId
+      });
+      
       const { data, error } = await supabase
         .from('sniplists')
         .select('*')
@@ -123,6 +135,13 @@ export default function Sniplists() {
       
       if (error) throw error;
       setSniplists(data || []);
+      
+      // Set flag if no sniplists were found
+      if (data && data.length === 0) {
+        setNoSniplists(true);
+      } else {
+        setNoSniplists(false);
+      }
     } catch (error: any) {
       console.error('Error fetching user sniplists:', error);
       toast.error(`Failed to load user sniplists: ${error.message}`);
@@ -163,6 +182,19 @@ export default function Sniplists() {
               <AlertTitle>Private Profile</AlertTitle>
               <AlertDescription>
                 This user's profile is private. You cannot view their sniplists.
+              </AlertDescription>
+            </Alert>
+          ) : noSniplists && !loading ? (
+            <Alert className="mb-4">
+              <Info className="h-4 w-4" />
+              <AlertTitle>No Sniplists Found</AlertTitle>
+              <AlertDescription>
+                {isCurrentUser 
+                  ? "You haven't created any sniplists yet."
+                  : username
+                    ? `${username} hasn't created any sniplists yet.`
+                    : "No sniplists found."
+                }
               </AlertDescription>
             </Alert>
           ) : (
