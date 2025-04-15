@@ -6,6 +6,7 @@ export interface Snippet {
   start_time: number;
   end_time: number;
   artist?: string;
+  youtube_title?: string;
 }
 
 export interface SniplistPlayerProps {

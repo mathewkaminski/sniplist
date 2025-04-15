@@ -30,6 +30,9 @@ export function NowPlaying({
     console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
   }, [currentSnippet, currentSnippetIndex, snippets.length]);
 
+  // Determine the display title - use the title, fallback to YouTube title, or "Untitled"
+  const displayTitle = currentSnippet.title || currentSnippet.youtube_title || 'Untitled';
+  
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
       <div className="container mx-auto">
@@ -37,7 +40,7 @@ export function NowPlaying({
           <div className="flex items-center gap-2">
             <ListMusic className="h-5 w-5 text-purple-700" />
             <span className="font-medium">
-              Now Playing: {currentSnippet.title || 'Untitled'}
+              Now Playing: {displayTitle}
               {currentSnippet.artist && ` - ${currentSnippet.artist}`}
               <span className="text-gray-500 text-sm ml-2">
                 ({currentSnippetIndex + 1}/{snippets.length})
@@ -62,7 +65,7 @@ export function NowPlaying({
               />
               <div className="ml-4">
                 <p className="text-lg font-medium">
-                  {currentSnippet.title || 'Untitled'}
+                  {displayTitle}
                 </p>
                 {currentSnippet.artist && (
                   <p className="text-sm text-gray-500">

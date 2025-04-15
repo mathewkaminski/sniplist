@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Snippet } from "./types";
+import { fetchVideoTitle } from "@/utils/youtube";
 
 export const useSniplistPlayback = (sniplistId: string) => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -92,13 +93,41 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       if (error) throw error;
 
-      const sortedSnippets = data
+      // Extract snippets from the response
+      let extractedSnippets = data
         .map(item => item.snippets as Snippet)
         .filter(Boolean);
 
+      // Process snippets to enhance titles if needed
+      const enhancedSnippets = await Promise.all(
+        extractedSnippets.map(async (snippet) => {
+          // Check if the title is the default format that uses timestamps
+          const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+          
+          try {
+            let youtubeTitle = null;
+            
+            // Only fetch YouTube title if the current title is the default one
+            if (isDefaultTitle) {
+              youtubeTitle = await fetchVideoTitle(snippet.video_id);
+            }
+            
+            return {
+              ...snippet,
+              // If it's a default title and we got a YouTube title, use that instead
+              title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
+              youtube_title: youtubeTitle
+            };
+          } catch (err) {
+            console.error(`Failed to fetch title for ${snippet.video_id}:`, err);
+            return snippet;
+          }
+        })
+      );
+
       if (isMounted.current) {
-        setSnippets(sortedSnippets);
-        console.log("Fetched snippets:", sortedSnippets);
+        setSnippets(enhancedSnippets);
+        console.log("Fetched snippets:", enhancedSnippets);
       }
     } catch (error: any) {
       console.error('Error fetching sniplist items:', error);
