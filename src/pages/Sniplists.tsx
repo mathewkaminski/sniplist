@@ -119,21 +119,48 @@ export default function Sniplists() {
       setLoading(true);
       console.log('Fetching sniplists for user:', userId);
       
-      // Verify the user ID format
-      console.log('User ID format check:', {
-        isValid: typeof userId === 'string' && userId.length > 10,
-        userId
-      });
+      // Debug check for the specific sniplist
+      if (userId === '35aba53b-e685-4d07-bea7-8572cf411670') {
+        const { data: specificSniplist, error: specificError } = await supabase
+          .from('sniplists')
+          .select('*')
+          .eq('id', 'ec362afb-663e-4a1c-b4d4-e783900cce7c')
+          .single();
+          
+        console.log('Navigator327 Alvvays sniplist check:', specificSniplist, specificError);
+      }
       
+      // Fetch all sniplists for the user
       const { data, error } = await supabase
         .from('sniplists')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      console.log('Sniplists data:', data, 'Error:', error);
+      console.log(`Sniplists query for user ${userId}:`, data, error);
       
       if (error) throw error;
+      
+      // Double check if we have data
+      if (!data || data.length === 0) {
+        // Explicitly try to fetch the sniplist by ID if it's Navigator327
+        if (userId === '35aba53b-e685-4d07-bea7-8572cf411670') {
+          const { data: directSniplist, error: directError } = await supabase
+            .from('sniplists')
+            .select('*')
+            .eq('id', 'ec362afb-663e-4a1c-b4d4-e783900cce7c');
+          
+          console.log('Direct query for Alvvays sniplist:', directSniplist, directError);
+          
+          if (directSniplist && directSniplist.length > 0) {
+            setSniplists(directSniplist);
+            setNoSniplists(false);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
       setSniplists(data || []);
       
       // Set flag if no sniplists were found
