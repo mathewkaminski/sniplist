@@ -1,65 +1,59 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SearchResult {
-  type: 'profile' | 'sniplist';
+  type: "profile" | "sniplist";
   title: string;
   id: string;
   created_at: string;
 }
 
 export function useSearch() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const MIN_SEARCH_LENGTH = 3;
+  const queryClient = useQueryClient();
 
-  const { data: results = [], isLoading } = useQuery({
-    queryKey: ['search', searchTerm],
+  const { data = [], isLoading, refetch } = useQuery({
+    queryKey: ["search"],
     queryFn: async () => {
-      if (!searchTerm || searchTerm.trim().length < MIN_SEARCH_LENGTH) return [];
+      const trimmedTerm = searchTerm.trim();
+      if (trimmedTerm.length < MIN_SEARCH_LENGTH) return [];
 
-      try {
-        const trimmedTerm = searchTerm.trim();
-        console.log("🔍 Executing search with Edge Function, term:", trimmedTerm);
+      console.log("🔍 Invoking search_sniplists with term:", trimmedTerm);
 
-        const { data, error } = await supabase.functions.invoke('search_sniplists', {
-          body: { searchTerm: `%${trimmedTerm}%` }
-        });
+      const { data, error } = await supabase.functions.invoke("search_sniplists", {
+        body: { searchTerm: `%${trimmedTerm}%` },
+      });
 
-        console.log("🧪 Raw Supabase Edge Function response:", data);
-
-        if (error) {
-          console.error('🔴 Supabase Edge Function error:', error);
-          return [];
-        }
-
-        // Check if the response is directly an array
-        if (Array.isArray(data)) {
-          console.log("✅ Data is a flat array:", data);
-          return data as SearchResult[];
-        }
-
-        // Check if the data is wrapped inside a `data` field
-        if (data && Array.isArray(data.data)) {
-          console.log("✅ Data is wrapped in { data: [...] }:", data.data);
-          return data.data as SearchResult[];
-        }
-
-        console.warn("⚠️ Unrecognized data format returned:", data);
-        return [];
-      } catch (err) {
-        console.error('🔴 Unexpected search error:', err);
+      if (error) {
+        console.error("❌ Supabase Edge Function error:", error);
         return [];
       }
+
+      if (data && Array.isArray(data.data)) {
+        console.log("✅ Results:", data.data);
+        return data.data as SearchResult[];
+      }
+
+      console.warn("⚠️ Unexpected data format:", data);
+      return [];
     },
-    enabled: searchTerm.trim().length >= MIN_SEARCH_LENGTH
+    enabled: false, // prevent auto-run
   });
+
+  // Manually trigger the search when the term changes
+  useEffect(() => {
+    if (searchTerm.trim().length >= MIN_SEARCH_LENGTH) {
+      refetch();
+    }
+  }, [searchTerm, refetch]);
 
   return {
     searchTerm,
     setSearchTerm,
-    results: Array.isArray(results) ? results : [],
+    results: Array.isArray(data) ? data : [],
     isLoading,
-    hasMinimumChars: searchTerm.trim().length >= MIN_SEARCH_LENGTH
+    hasMinimumChars: searchTerm.trim().length >= MIN_SEARCH_LENGTH,
   };
 }
