@@ -8,13 +8,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EditTitleDialogProps {
   open: boolean;
   title: string;
-  artist?: string;
+  comments?: string;
   onOpenChange: (open: boolean) => void;
-  onSave: (title: string, artist: string) => void;
+  onSave: (title: string, comments: string) => void;
   onTitleChange: (value: string) => void;
   onArtistChange: (value: string) => void;
 }
@@ -22,7 +23,7 @@ interface EditTitleDialogProps {
 export function EditTitleDialog({ 
   open, 
   title, 
-  artist = '',
+  comments = '',
   onOpenChange, 
   onSave, 
   onTitleChange,
@@ -34,7 +35,7 @@ export function EditTitleDialog({
         <DialogHeader>
           <DialogTitle>Edit Snippet Details</DialogTitle>
           <DialogDescription>
-            Update the title and artist for your snippet.
+            Update the title and comments for your snippet.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -48,19 +49,20 @@ export function EditTitleDialog({
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="artist" className="text-sm font-medium">Artist</label>
-            <Input
-              id="artist"
-              value={artist}
+            <label htmlFor="comments" className="text-sm font-medium">Comments</label>
+            <Textarea
+              id="comments"
+              value={comments}
               onChange={(e) => onArtistChange(e.target.value)}
-              placeholder="Enter artist name"
+              placeholder="Add your comments about this snippet"
+              className="min-h-[100px]"
             />
           </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={() => onSave(title, artist)}>
+            <Button onClick={() => onSave(title, comments)}>
               Save
             </Button>
           </div>

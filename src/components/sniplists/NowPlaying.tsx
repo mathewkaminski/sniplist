@@ -39,7 +39,7 @@ export function NowPlaying({
             <ListMusic className="h-5 w-5 text-purple-700" />
             <span className="font-medium">
               Now Playing: {displayTitle}
-              {currentSnippet.artist && ` - ${currentSnippet.artist}`}
+              {currentSnippet.comments && ` - ${currentSnippet.comments}`}
               <span className="text-gray-500 text-sm ml-2">
                 ({currentSnippetIndex + 1}/{snippets.length})
               </span>
@@ -74,9 +74,9 @@ export function NowPlaying({
                 <p className="text-lg font-medium">
                   {displayTitle}
                 </p>
-                {currentSnippet.artist && (
+                {currentSnippet.comments && (
                   <p className="text-sm text-gray-500">
-                    {currentSnippet.artist}
+                    {currentSnippet.comments}
                   </p>
                 )}
               </div>
