@@ -106,11 +106,10 @@ export function useSniplistsData(userId?: string) {
       setLoading(true);
       console.log('Fetching sniplists for user:', userId);
 
-      const { data, error } = await supabase
-        .from('sniplists')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      // Using RPC to call the get_user_sniplists function
+      const { data, error } = await supabase.rpc('get_user_sniplists', {
+        user_id_param: userId
+      });
       
       console.log(`Sniplists query for user ${userId}:`, data, error);
       
