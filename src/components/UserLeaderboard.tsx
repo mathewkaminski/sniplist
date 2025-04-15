@@ -69,7 +69,7 @@ export function UserLeaderboard() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => navigate(`/sniplists?userId=${user.user_id}`)}
+                  onClick={() => navigate(`/user/${user.user_id}/sniplists`)}
                 >
                   View Sniplists
                 </Button>

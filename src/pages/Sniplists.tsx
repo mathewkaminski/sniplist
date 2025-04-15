@@ -1,10 +1,9 @@
-
 import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SniplistsList } from "@/components/sniplists/SniplistsList";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Info } from "lucide-react";
 
@@ -18,26 +17,23 @@ interface Sniplist {
 export default function Sniplists() {
   const [sniplists, setSniplists] = useState<Sniplist[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
+  const { userId } = useParams();
   const [username, setUsername] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
   const [noSniplists, setNoSniplists] = useState(false);
 
   useEffect(() => {
-    const userId = searchParams.get('userId');
-    
     if (userId) {
       console.log('Detected userId in URL:', userId);
       checkUserAccess(userId);
     } else {
       fetchSniplists();
     }
-  }, [searchParams]);
+  }, [userId]);
 
   const checkUserAccess = async (userId: string) => {
     try {
-      // Check if this is the current logged-in user
       const { data: authData } = await supabase.auth.getUser();
       console.log('Auth data:', authData);
       
@@ -45,7 +41,6 @@ export default function Sniplists() {
       setIsCurrentUser(isCurrentUser);
       console.log('Is current user:', isCurrentUser);
 
-      // Get the user's profile to check privacy settings and fetch username
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username, is_public')
@@ -62,7 +57,6 @@ export default function Sniplists() {
       if (profileData) {
         setUsername(profileData.username || 'User');
         
-        // If it's not the current user and the profile is private, mark it as private
         if (!isCurrentUser && profileData.is_public === false) {
           console.log('Profile is private, blocking access');
           setIsPrivate(true);
@@ -70,7 +64,6 @@ export default function Sniplists() {
           return;
         }
         
-        // Otherwise, fetch the user's sniplists
         console.log('Access granted, fetching sniplists');
         fetchUserSniplists(userId);
       } else {
@@ -89,11 +82,9 @@ export default function Sniplists() {
       const { data: authData } = await supabase.auth.getUser();
       
       if (authData.user) {
-        // If user is logged in, fetch current user's sniplists
         setIsCurrentUser(true);
         fetchUserSniplists(authData.user.id);
       } else {
-        // If not logged in, fetch public sniplists
         const { data, error } = await supabase
           .from('sniplists')
           .select('*')
@@ -119,9 +110,7 @@ export default function Sniplists() {
       setLoading(true);
       console.log('Fetching sniplists for user:', userId);
       
-      // Explicitly check for Navigator327's Alvvays sniplist
       if (userId === '35aba53b-e685-4d07-bea7-8572cf411670') {
-        // First try a direct fetch by ID
         const { data: specificSniplist, error: specificError } = await supabase
           .from('sniplists')
           .select('*')
@@ -136,7 +125,6 @@ export default function Sniplists() {
           return;
         }
 
-        // Instead of using RPC, use a direct SQL query with the function name
         const { data: rawQueryResult, error: rawQueryError } = await supabase
           .from('sniplists')
           .select('*')
@@ -153,7 +141,6 @@ export default function Sniplists() {
         }
       }
       
-      // Standard fetch for user's sniplists
       const { data, error } = await supabase
         .from('sniplists')
         .select('*')
@@ -165,7 +152,6 @@ export default function Sniplists() {
       if (error) throw error;
       setSniplists(data || []);
       
-      // Set flag if no sniplists were found
       if (!data || data.length === 0) {
         setNoSniplists(true);
       } else {
