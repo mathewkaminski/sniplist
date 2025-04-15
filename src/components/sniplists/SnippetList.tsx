@@ -19,9 +19,9 @@ export function SnippetList({ snippets, currentSnippetIndex, onSnippetSelect }: 
           <p className="text-sm font-medium truncate max-w-[200px]">
             {snippet.title || 'Untitled'}
           </p>
-          {snippet.artist && (
+          {snippet.comments && (
             <p className="text-xs text-gray-500 truncate max-w-[200px]">
-              {snippet.artist}
+              {snippet.comments}
             </p>
           )}
         </div>
