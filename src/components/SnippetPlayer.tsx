@@ -113,7 +113,7 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
               }
             }
           },
-          onError: (event: any) => {
+          onError: (event: YT.OnErrorEvent) => {
             console.error("YouTube player error:", event);
           }
         }

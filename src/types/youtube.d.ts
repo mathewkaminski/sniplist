@@ -26,8 +26,14 @@ declare namespace YT {
     data: PlayerState;
   }
 
+  interface OnErrorEvent {
+    data: number;
+  }
+
   interface PlayerOptions {
     videoId: string;
+    height?: string | number;
+    width?: string | number;
     playerVars?: {
       autoplay?: number;
       controls?: number;
@@ -40,6 +46,7 @@ declare namespace YT {
     events?: {
       onReady?: (event: PlayerEvent) => void;
       onStateChange?: (event: OnStateChangeEvent) => void;
+      onError?: (event: OnErrorEvent) => void;
     };
   }
 
