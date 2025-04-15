@@ -37,7 +37,8 @@ export function NowPlaying({
           <div className="flex items-center gap-2">
             <ListMusic className="h-5 w-5 text-purple-700" />
             <span className="font-medium">
-              Now Playing: {currentSnippet.title || 'Untitled'} 
+              Now Playing: {currentSnippet.title || 'Untitled'}
+              {currentSnippet.artist && ` - ${currentSnippet.artist}`}
               <span className="text-gray-500 text-sm ml-2">
                 ({currentSnippetIndex + 1}/{snippets.length})
               </span>
