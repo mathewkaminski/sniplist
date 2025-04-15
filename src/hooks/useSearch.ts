@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,13 +17,11 @@ export function useSearch() {
     queryKey: ['search', searchTerm],
     queryFn: async () => {
       if (!searchTerm || searchTerm.trim().length < MIN_SEARCH_LENGTH) return [];
-      
+
       try {
-        // Log search execution
         console.log("Executing search with Edge Function, term:", searchTerm.trim());
-        
-        // Call the Supabase Edge Function
-        const { data: responseData, error } = await supabase.functions.invoke('search_sniplists', {
+
+        const { data, error } = await supabase.functions.invoke('search_sniplists', {
           body: { searchTerm: searchTerm.trim() }
         });
 
@@ -32,19 +29,16 @@ export function useSearch() {
           console.error('Search function error:', error);
           return [];
         }
-        
-        // Extract the data array from the response
-        const results = responseData?.data || [];
-        
-        if (!results || results.length === 0) {
+
+        if (!data || data.length === 0) {
           console.log(`No results found for "${searchTerm.trim()}"`);
           return [];
         }
-        
-        console.log(`Found ${results.length} results for "${searchTerm.trim()}":`);
-        console.log("Search results:", results);
-        
-        return results as SearchResult[];
+
+        console.log(`Found ${data.length} results for "${searchTerm.trim()}":`);
+        console.log("Search results:", data);
+
+        return data as SearchResult[];
       } catch (err) {
         console.error('Unexpected search error:', err);
         return [];
