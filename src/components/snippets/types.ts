@@ -8,6 +8,7 @@ export interface Snippet {
   end_time: number;
   created_at: string;
   youtube_title?: string;
+  uploader?: string;
 }
 
 export interface SnippetListProps {
