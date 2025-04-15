@@ -1,4 +1,3 @@
-
 import { 
   Table, 
   TableHeader, 
@@ -29,13 +28,24 @@ interface SnippetListProps {
   snippets: Snippet[];
   onDelete: (id: string) => void;
   onEdit: (snippet: Snippet) => void;
+  isSelecting?: boolean;
+  selectedSnippets?: string[];
+  onSnippetSelect?: (id: string) => void;
 }
 
-export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
+export function SnippetList({ 
+  snippets, 
+  onDelete, 
+  onEdit,
+  isSelecting = false,
+  selectedSnippets = [],
+  onSnippetSelect
+}: SnippetListProps) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          {isSelecting && <TableHead className="w-16">Select</TableHead>}
           <TableHead>Title</TableHead>
           <TableHead>Artist</TableHead>
           <TableHead>Audio</TableHead>
@@ -47,6 +57,17 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
       <TableBody>
         {snippets.map((snippet) => (
           <TableRow key={snippet.id}>
+            {isSelecting && (
+              <TableCell>
+                <Button
+                  variant={selectedSnippets.includes(snippet.id) ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => onSnippetSelect?.(snippet.id)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TableCell>
+            )}
             <TableCell 
               className="font-medium max-w-xs cursor-pointer hover:bg-muted/50"
               onClick={() => onEdit(snippet)}
@@ -61,7 +82,6 @@ export function SnippetList({ snippets, onDelete, onEdit }: SnippetListProps) {
                   {snippet.title}
                 </TooltipContent>
               </Tooltip>
-              {/* Removed the YouTube title display here */}
             </TableCell>
             <TableCell 
               className="cursor-pointer hover:bg-muted/50"

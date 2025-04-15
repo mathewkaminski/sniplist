@@ -33,6 +33,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sniplist_items: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          sniplist_id: string
+          snippet_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position: number
+          sniplist_id: string
+          snippet_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          sniplist_id?: string
+          snippet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sniplist_items_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
+            referencedRelation: "sniplists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sniplist_items_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sniplists: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       snippets: {
         Row: {
           artist: string | null
