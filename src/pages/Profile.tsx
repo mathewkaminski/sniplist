@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -60,14 +59,28 @@ export default function Profile() {
       
       if (!user) throw new Error("No user");
 
+      const updates = {
+        username: username.trim(),
+        updated_at: new Date().toISOString(),
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({ username })
+        .update(updates)
         .eq('id', user.id);
 
       if (error) throw error;
+      
+      // Also update the auth.users metadata to keep display name in sync
+      const { error: updateAuthError } = await supabase.auth.updateUser({
+        data: { username: username.trim() }
+      });
+
+      if (updateAuthError) throw updateAuthError;
+
       toast.success("Profile updated successfully");
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
       toast.error("Error updating profile");
     }
   }
