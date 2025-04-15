@@ -20,27 +20,84 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
   const intervalRef = useRef<number | null>(null);
   const playerId = `youtube-player-${videoId}-${startTime}-${Math.random().toString(36).substring(2, 9)}`;
 
-  // Load YouTube API if not already loaded
   useEffect(() => {
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      tag.onload = () => {
-        // Once the API is loaded, we can initialize the player
-        if (window.YT && window.YT.Player) {
-          initializePlayer();
-        } else {
-          window.onYouTubeIframeAPIReady = initializePlayer;
+    const initializeYouTubeAPI = () => {
+      if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      }
+    };
+
+    const setupPlayer = () => {
+      if (playerInitialized.current || !window.YT || !window.YT.Player || !playerRef.current) {
+        return;
+      }
+
+      try {
+        playerInitialized.current = true;
+        console.log("Setting up player for video:", videoId);
+
+        const container = document.getElementById(playerId);
+        if (!container) {
+          const div = document.createElement('div');
+          div.id = playerId;
+          playerRef.current.appendChild(div);
         }
-      };
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    } else if (window.YT && window.YT.Player) {
-      // API is already loaded, initialize player
-      initializePlayer();
+
+        const newPlayer = new window.YT.Player(playerId, {
+          videoId: videoId,
+          height: '1',
+          width: '1',
+          playerVars: {
+            autoplay: autoplay ? 1 : 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            rel: 0,
+            modestbranding: 1,
+            start: Math.floor(startTime)
+          },
+          events: {
+            onReady: (event: YT.PlayerEvent) => {
+              console.log("Player ready for video:", videoId);
+              setPlayer(event.target);
+              setPlayerReady(true);
+              if (autoplay) {
+                event.target.playVideo();
+                setIsPlaying(true);
+              }
+            },
+            onStateChange: (event: YT.OnStateChangeEvent) => {
+              if (event.data === YT.PlayerState.PLAYING) {
+                setIsPlaying(true);
+              } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                setIsPlaying(false);
+                if (event.data === YT.PlayerState.ENDED && onEnded) {
+                  onEnded();
+                }
+              }
+            },
+            onError: (event: YT.OnErrorEvent) => {
+              console.error("YouTube player error for video:", videoId, event);
+              setPlayerReady(false);
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error("Error initializing player for video:", videoId, error);
+        setPlayerReady(false);
+      }
+    };
+
+    initializeYouTubeAPI();
+
+    if (window.YT && window.YT.Player) {
+      setupPlayer();
     } else {
-      // API is loading but not ready, wait for it
-      window.onYouTubeIframeAPIReady = initializePlayer;
+      window.onYouTubeIframeAPIReady = setupPlayer;
     }
 
     return () => {
@@ -55,73 +112,10 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
           console.error("Error destroying player:", e);
         }
       }
-    };
-  }, [videoId, startTime]);
 
-  const initializePlayer = () => {
-    if (playerInitialized.current || !window.YT || !window.YT.Player) {
-      return;
-    }
-    
-    if (!playerRef.current) {
-      console.log("Player container not found");
-      return;
-    }
-    
-    playerInitialized.current = true;
-    console.log("Initializing player for:", videoId);
-    
-    try {
-      // Make sure the player container element exists and is empty
-      const container = document.getElementById(playerId);
-      if (!container) {
-        const div = document.createElement('div');
-        div.id = playerId;
-        playerRef.current.appendChild(div);
-      }
-      
-      const newPlayer = new window.YT.Player(playerId, {
-        videoId: videoId,
-        height: '1',
-        width: '1',
-        playerVars: {
-          autoplay: autoplay ? 1 : 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          rel: 0,
-          modestbranding: 1,
-          start: Math.floor(startTime)
-        },
-        events: {
-          onReady: (event: YT.PlayerEvent) => {
-            console.log("Snippet player ready for video:", videoId);
-            setPlayer(event.target);
-            setPlayerReady(true);
-            if (autoplay) {
-              event.target.playVideo();
-              setIsPlaying(true);
-            }
-          },
-          onStateChange: (event: YT.OnStateChangeEvent) => {
-            if (event.data === YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-              setIsPlaying(false);
-              if (event.data === YT.PlayerState.ENDED && onEnded) {
-                onEnded();
-              }
-            }
-          },
-          onError: (event: YT.OnErrorEvent) => {
-            console.error("YouTube player error:", event);
-          }
-        }
-      });
-    } catch (error) {
-      console.error("Error initializing snippet player:", error);
-    }
-  };
+      playerInitialized.current = false;
+    };
+  }, [videoId, startTime, autoplay]);
 
   const togglePlayPause = () => {
     if (!player || !playerReady) {
@@ -142,7 +136,6 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
       player.playVideo();
       setIsPlaying(true);
       
-      // Monitor playback to stop at end time
       intervalRef.current = window.setInterval(() => {
         if (!player) return;
         
@@ -169,8 +162,8 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
 
   return (
     <div className="flex items-center gap-2">
-      <div ref={playerRef} className="hidden">
-        {/* YouTube player will be mounted here in an invisible container */}
+      <div ref={playerRef} className="absolute opacity-0 pointer-events-none">
+        {/* YouTube player will be mounted here */}
       </div>
       <Button 
         size="icon" 
