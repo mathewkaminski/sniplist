@@ -24,6 +24,7 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
+  const [playlistComplete, setPlaylistComplete] = useState(false);
 
   useEffect(() => {
     fetchSniplistItems();
@@ -65,9 +66,14 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
   };
 
   const handleSnippetEnd = () => {
+    console.log("Snippet ended, current index:", currentSnippetIndex, "total snippets:", snippets.length);
     // Move to next snippet when current one ends
     if (currentSnippetIndex < snippets.length - 1) {
-      setCurrentSnippetIndex(currentSnippetIndex + 1);
+      setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+    } else {
+      // We've reached the end of the playlist
+      setPlaylistComplete(true);
+      toast.success("Playlist complete!");
     }
   };
 
@@ -88,6 +94,8 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
     </div>;
   }
 
+  const currentSnippet = snippets[currentSnippetIndex];
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
       <div className="container mx-auto">
@@ -95,7 +103,7 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
           <div className="flex items-center gap-2">
             <ListMusic className="h-5 w-5 text-purple-700" />
             <span className="font-medium">
-              Now Playing: {snippets[currentSnippetIndex].title}
+              {playlistComplete ? "Playlist Complete" : `Now Playing: ${currentSnippet.title}`}
             </span>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -103,48 +111,53 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
           </Button>
         </div>
         
-        <div className="flex flex-col">
-          <div className="mb-4">
-            <div className="flex items-center">
-              <SnippetPlayer
-                videoId={snippets[currentSnippetIndex].video_id}
-                startTime={snippets[currentSnippetIndex].start_time}
-                endTime={snippets[currentSnippetIndex].end_time}
-                autoplay={true}
-                onEnded={handleSnippetEnd}
-              />
-              <div className="ml-4">
-                <p className="text-lg font-medium">
-                  {snippets[currentSnippetIndex].title}
-                </p>
-                {snippets[currentSnippetIndex].artist && (
-                  <p className="text-sm text-gray-500">
-                    {snippets[currentSnippetIndex].artist}
+        {!playlistComplete && (
+          <div className="flex flex-col">
+            <div className="mb-4">
+              <div className="flex items-center">
+                <SnippetPlayer
+                  videoId={currentSnippet.video_id}
+                  startTime={currentSnippet.start_time}
+                  endTime={currentSnippet.end_time}
+                  autoplay={true}
+                  onEnded={handleSnippetEnd}
+                />
+                <div className="ml-4">
+                  <p className="text-lg font-medium">
+                    {currentSnippet.title}
                   </p>
-                )}
+                  {currentSnippet.artist && (
+                    <p className="text-sm text-gray-500">
+                      {currentSnippet.artist}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {snippets.map((snippet, index) => (
-              <div 
-                key={snippet.id} 
-                className={`flex-none cursor-pointer p-2 rounded ${index === currentSnippetIndex ? 'bg-gray-100' : ''}`}
-                onClick={() => setCurrentSnippetIndex(index)}
-              >
-                <p className="text-sm font-medium truncate max-w-[200px]">
-                  {snippet.title}
-                </p>
-                {snippet.artist && (
-                  <p className="text-xs text-gray-500 truncate max-w-[200px]">
-                    {snippet.artist}
+            
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {snippets.map((snippet, index) => (
+                <div 
+                  key={snippet.id} 
+                  className={`flex-none cursor-pointer p-2 rounded ${index === currentSnippetIndex ? 'bg-gray-100' : ''}`}
+                  onClick={() => {
+                    setCurrentSnippetIndex(index);
+                    setPlaylistComplete(false);
+                  }}
+                >
+                  <p className="text-sm font-medium truncate max-w-[200px]">
+                    {snippet.title}
                   </p>
-                )}
-              </div>
-            ))}
+                  {snippet.artist && (
+                    <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                      {snippet.artist}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
