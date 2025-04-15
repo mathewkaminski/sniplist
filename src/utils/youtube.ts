@@ -1,4 +1,3 @@
-
 export const extractYouTubeId = (url: string): string | null => {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
@@ -21,9 +20,12 @@ export const isValidYouTubeUrl = (url: string): boolean => {
 
 export const fetchVideoTitle = async (videoId: string): Promise<string> => {
   try {
-    // Since we're having issues with the YouTube API, let's handle this gracefully
-    // without making API calls that are failing
-    return 'YouTube Video';
+    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch video title');
+    }
+    const data = await response.json();
+    return data.title;
   } catch (error) {
     console.error('Error fetching video title:', error);
     return 'Untitled Video';
