@@ -233,6 +233,15 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      search_profiles_and_sniplists: {
+        Args: { search_term: string }
+        Returns: {
+          id: string
+          title: string
+          type: string
+          created_at: string
+        }[]
+      }
       set_limit: {
         Args: { "": number }
         Returns: number
