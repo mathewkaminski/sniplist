@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import MyList from "./pages/MyList";
 import Sniplists from "./pages/Sniplists";
+import ContactUs from "./pages/ContactUs";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/my-list" element={<MyList />} />
           <Route path="/sniplists" element={<Sniplists />} />
+          <Route path="/contact-us" element={<ContactUs />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

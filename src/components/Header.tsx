@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Home, ListMusic, FileText } from "lucide-react";
+import { PlusCircle, Home, ListMusic, FileText, HelpCircle } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 
@@ -39,12 +39,21 @@ export function Header() {
         </div>
         <Button 
           variant="ghost" 
-          className="text-2xl font-bold text-purple-700 hover:bg-transparent"
+          className="text-2xl font-bold text-purple-700 hover:bg-transparent flex items-center gap-2"
           onClick={handleHomeClick}
         >
+          <img 
+            src="/lovable-uploads/484c4368-6966-4be2-9e37-7e19f30ea508.png" 
+            alt="Sniplist Logo" 
+            className="h-8 w-8"
+          />
           Sniplist
         </Button>
         <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate("/contact-us")}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            Help
+          </Button>
           <Button variant="ghost">
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Snippet

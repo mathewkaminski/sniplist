@@ -51,12 +51,10 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
       }
     };
 
-    // Check if the YouTube API is already loaded
     if (window.YT && window.YT.Player) {
       youtubeApiLoaded.current = true;
       initializePlayer();
     } else {
-      // If YouTube API is not loaded, load it
       if (!document.getElementById('youtube-api-script')) {
         const tag = document.createElement('script');
         tag.id = 'youtube-api-script';
@@ -66,14 +64,12 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
         firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
       }
 
-      // Define the onYouTubeIframeAPIReady callback
       window.onYouTubeIframeAPIReady = () => {
         youtubeApiLoaded.current = true;
         initializePlayer();
       };
     }
 
-    // Clean up function to destroy player on unmount
     return () => {
       if (player) {
         player.destroy();
@@ -160,6 +156,9 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
     <Card className="p-6">
       <div className="space-y-4">
         <div ref={playerContainerRef} id="youtube-player" className="hidden"></div>
+        <p className="text-sm text-gray-600 mb-4">
+          To Snip: Use the slider to select the start of your snippet, then click "Set" to save your location and "Snip" to save it to your profile
+        </p>
         <div className="flex items-center gap-4">
           <Button 
             size="icon" 
