@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,16 +24,16 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
   const [loading, setLoading] = useState(true);
   const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
   const [playlistComplete, setPlaylistComplete] = useState(false);
-
-  // Track if the component is mounted to avoid state updates after unmount
   const isMounted = useRef(true);
-  
-  // Reference to track if we need to skip to the next snippet
   const shouldAdvance = useRef(false);
+  const snippetTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      if (snippetTimer.current) {
+        clearTimeout(snippetTimer.current);
+      }
     };
   }, []);
 
@@ -42,21 +41,41 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
     fetchSniplistItems();
   }, [sniplistId]);
 
-  // This effect handles advancing to the next snippet when one ends
   useEffect(() => {
     if (shouldAdvance.current) {
       shouldAdvance.current = false;
-      
-      if (currentSnippetIndex < snippets.length - 1) {
-        // Move to next snippet
-        setCurrentSnippetIndex(prevIndex => prevIndex + 1);
-      } else {
-        // We've reached the end of the playlist
-        setPlaylistComplete(true);
-        toast.success("Playlist complete!");
-      }
+      advanceToNextSnippet();
     }
-  }, [currentSnippetIndex, snippets.length, shouldAdvance.current]);
+  }, [currentSnippetIndex, snippets.length]);
+
+  useEffect(() => {
+    if (!playlistComplete) {
+      if (snippetTimer.current) {
+        clearTimeout(snippetTimer.current);
+      }
+
+      snippetTimer.current = setTimeout(() => {
+        console.log("20 seconds elapsed, advancing to next snippet");
+        shouldAdvance.current = true;
+        advanceToNextSnippet();
+      }, 20000);
+
+      return () => {
+        if (snippetTimer.current) {
+          clearTimeout(snippetTimer.current);
+        }
+      };
+    }
+  }, [currentSnippetIndex, playlistComplete]);
+
+  const advanceToNextSnippet = () => {
+    if (currentSnippetIndex < snippets.length - 1) {
+      setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+    } else {
+      setPlaylistComplete(true);
+      toast.success("Playlist complete!");
+    }
+  };
 
   const fetchSniplistItems = async () => {
     try {
@@ -80,7 +99,6 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
 
       if (error) throw error;
 
-      // Process the data to extract snippets
       const sortedSnippets = data
         .map(item => item.snippets as Snippet)
         .filter(Boolean);
@@ -101,14 +119,7 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
 
   const handleSnippetEnd = () => {
     console.log("Snippet ended, current index:", currentSnippetIndex, "total snippets:", snippets.length);
-    // Set flag to advance to next snippet
     shouldAdvance.current = true;
-  };
-
-  // Restart the playlist
-  const handleRestartPlaylist = () => {
-    setCurrentSnippetIndex(0);
-    setPlaylistComplete(false);
   };
 
   if (loading) {
