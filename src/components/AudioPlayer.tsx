@@ -180,35 +180,34 @@ export function AudioPlayer({ videoId }: AudioPlayerProps) {
               className="cursor-pointer"
             />
           </div>
-          {!isPlaying && !snippetMarker && (
-            <Button
-              onClick={handleSetSnippet}
-              variant="default"
-              className="ml-2"
-            >
-              Set
-            </Button>
-          )}
-          {snippetMarker && (
+        </div>
+        <div className="flex justify-between items-center text-sm text-gray-500">
+          <span>{Math.floor(currentTime)}s / {Math.floor(duration)}s</span>
+          <Button
+            onClick={handleSetSnippet}
+            variant="default"
+            size="sm"
+            className="ml-2"
+          >
+            Set
+          </Button>
+        </div>
+        {snippetMarker && (
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>
+              Snippet: {Math.floor(snippetMarker.start)}s - {Math.floor(snippetMarker.end)}s
+            </span>
             <Button
               onClick={handleSnip}
               variant="default"
-              className="ml-2 gap-2"
+              className="gap-2"
               disabled={isSaving}
             >
               <Scissors className="h-4 w-4" />
               {isSaving ? "Saving..." : "Snip"}
             </Button>
-          )}
-        </div>
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>{Math.floor(currentTime)}s / {Math.floor(duration)}s</span>
-          {snippetMarker && (
-            <span>
-              Snippet: {Math.floor(snippetMarker.start)}s - {Math.floor(snippetMarker.end)}s
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </Card>
   );
