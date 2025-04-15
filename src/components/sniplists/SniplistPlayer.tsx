@@ -28,6 +28,9 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
 
   // Track if the component is mounted to avoid state updates after unmount
   const isMounted = useRef(true);
+  
+  // Reference to track if we need to skip to the next snippet
+  const shouldAdvance = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -38,6 +41,22 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
   useEffect(() => {
     fetchSniplistItems();
   }, [sniplistId]);
+
+  // This effect handles advancing to the next snippet when one ends
+  useEffect(() => {
+    if (shouldAdvance.current) {
+      shouldAdvance.current = false;
+      
+      if (currentSnippetIndex < snippets.length - 1) {
+        // Move to next snippet
+        setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+      } else {
+        // We've reached the end of the playlist
+        setPlaylistComplete(true);
+        toast.success("Playlist complete!");
+      }
+    }
+  }, [currentSnippetIndex, snippets.length, shouldAdvance.current]);
 
   const fetchSniplistItems = async () => {
     try {
@@ -82,14 +101,8 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
 
   const handleSnippetEnd = () => {
     console.log("Snippet ended, current index:", currentSnippetIndex, "total snippets:", snippets.length);
-    // Move to next snippet when current one ends
-    if (currentSnippetIndex < snippets.length - 1) {
-      setCurrentSnippetIndex(prevIndex => prevIndex + 1);
-    } else {
-      // We've reached the end of the playlist
-      setPlaylistComplete(true);
-      toast.success("Playlist complete!");
-    }
+    // Set flag to advance to next snippet
+    shouldAdvance.current = true;
   };
 
   // Restart the playlist
@@ -147,6 +160,7 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
             <div className="mb-4">
               <div className="flex items-center">
                 <SnippetPlayer
+                  key={`${currentSnippet.video_id}-${currentSnippet.start_time}-${currentSnippetIndex}`}
                   videoId={currentSnippet.video_id}
                   startTime={currentSnippet.start_time}
                   endTime={currentSnippet.end_time}
