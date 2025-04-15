@@ -20,26 +20,35 @@ export function useSearch() {
 
       try {
         const trimmedTerm = searchTerm.trim();
-        console.log("Executing search with Edge Function, term:", trimmedTerm);
+        console.log("🔍 Executing search with Edge Function, term:", trimmedTerm);
 
         const { data, error } = await supabase.functions.invoke('search_sniplists', {
-          body: { searchTerm: `%${trimmedTerm}%` } // Add wildcard symbols here
+          body: { searchTerm: `%${trimmedTerm}%` }
         });
 
+        console.log("🧪 Raw Supabase Edge Function response:", data);
+
         if (error) {
-          console.error('Search function error:', error);
+          console.error('🔴 Supabase Edge Function error:', error);
           return [];
         }
 
-        if (!data || !Array.isArray(data) || data.length === 0) {
-          console.log(`No results found for "${trimmedTerm}"`);
-          return [];
+        // Check if the response is directly an array
+        if (Array.isArray(data)) {
+          console.log("✅ Data is a flat array:", data);
+          return data as SearchResult[];
         }
 
-        console.log(`Found ${data.length} results for "${trimmedTerm}":`, data);
-        return data as SearchResult[];
+        // Check if the data is wrapped inside a `data` field
+        if (data && Array.isArray(data.data)) {
+          console.log("✅ Data is wrapped in { data: [...] }:", data.data);
+          return data.data as SearchResult[];
+        }
+
+        console.warn("⚠️ Unrecognized data format returned:", data);
+        return [];
       } catch (err) {
-        console.error('Unexpected search error:', err);
+        console.error('🔴 Unexpected search error:', err);
         return [];
       }
     },
