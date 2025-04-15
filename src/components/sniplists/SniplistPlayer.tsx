@@ -122,6 +122,11 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
     shouldAdvance.current = true;
   };
 
+  const handleRestartPlaylist = () => {
+    setCurrentSnippetIndex(0);
+    setPlaylistComplete(false);
+  };
+
   if (loading) {
     return <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
       <div className="container mx-auto">
