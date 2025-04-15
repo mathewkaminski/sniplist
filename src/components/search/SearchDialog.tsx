@@ -22,7 +22,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   useEffect(() => {
     console.log("SearchDialog state:", { 
       searchTerm, 
-      resultsCount: results.length, 
+      resultsCount: results?.length || 0, 
       isLoading, 
       hasMinimumChars 
     });
@@ -41,9 +41,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
   };
 
+  // Make sure results is always an array before filtering
+  const safeResults = Array.isArray(results) ? results : [];
+  
   // Group results by type
-  const profileResults = results.filter(result => result.type === 'profile');
-  const sniplistResults = results.filter(result => result.type === 'sniplist');
+  const profileResults = safeResults.filter(result => result.type === 'profile');
+  const sniplistResults = safeResults.filter(result => result.type === 'sniplist');
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -70,7 +73,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </div>
             )}
             
-            {hasMinimumChars && !isLoading && results.length === 0 && (
+            {hasMinimumChars && !isLoading && safeResults.length === 0 && (
               <CommandEmpty>No results found.</CommandEmpty>
             )}
             

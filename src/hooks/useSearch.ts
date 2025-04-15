@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,15 +31,13 @@ export function useSearch() {
           return [];
         }
 
-        if (!data || data.length === 0) {
+        if (!data || !data.data || data.data.length === 0) {
           console.log(`No results found for "${searchTerm.trim()}"`);
           return [];
         }
 
-        console.log(`Found ${data.length} results for "${searchTerm.trim()}":`);
-        console.log("Search results:", data);
-
-        return data as SearchResult[];
+        console.log(`Found ${data.data.length} results for "${searchTerm.trim()}":`, data);
+        return data.data as SearchResult[];
       } catch (err) {
         console.error('Unexpected search error:', err);
         return [];
@@ -50,7 +49,7 @@ export function useSearch() {
   return {
     searchTerm,
     setSearchTerm,
-    results,
+    results: Array.isArray(results) ? results : [],
     isLoading,
     hasMinimumChars: searchTerm.trim().length >= MIN_SEARCH_LENGTH
   };
