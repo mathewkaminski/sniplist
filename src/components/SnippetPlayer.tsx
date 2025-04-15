@@ -32,7 +32,7 @@ export function SnippetPlayer({
 
   return (
     <div className="flex items-center gap-2">
-      <div ref={playerRef} className="absolute opacity-0 pointer-events-none">
+      <div ref={playerRef} className="w-1 h-1 opacity-0">
         {/* YouTube player will be mounted here */}
       </div>
       <PlayerButton 

@@ -1,11 +1,34 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export function useYouTubeAPI() {
-  const apiLoaded = useRef(false);
+  const [isAPIReady, setIsAPIReady] = useState(false);
+  const apiLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (!window.YT) {
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      setIsAPIReady(true);
+      return;
+    }
+
+    // Load the API if not already loading
+    if (!apiLoadedRef.current) {
+      apiLoadedRef.current = true;
+
+      // Save the original callback if it exists
+      const originalCallback = window.onYouTubeIframeAPIReady;
+
+      // Set up our callback to run after the API loads
+      window.onYouTubeIframeAPIReady = () => {
+        setIsAPIReady(true);
+        // Call the original callback if it existed
+        if (typeof originalCallback === 'function') {
+          originalCallback();
+        }
+      };
+
+      // Load the YouTube API script
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
       const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -14,6 +37,6 @@ export function useYouTubeAPI() {
   }, []);
 
   return {
-    isAPIReady: Boolean(window.YT && window.YT.Player)
+    isAPIReady
   };
 }

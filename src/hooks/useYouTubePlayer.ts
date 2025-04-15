@@ -1,5 +1,5 @@
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useYouTubeAPI } from "./useYouTubeAPI";
 import { usePlayerState } from "./usePlayerState";
 import { usePlaybackControl } from "./usePlaybackControl";
@@ -48,40 +48,39 @@ export function useYouTubePlayer({
   });
 
   // Initialize player when API is ready
-  if (isAPIReady && !playerInitialized.current && playerRef.current) {
-    try {
-      playerInitialized.current = true;
-      console.log("Setting up player for video:", videoId);
+  useEffect(() => {
+    if (isAPIReady && !playerInitialized.current && playerRef.current) {
+      try {
+        playerInitialized.current = true;
+        console.log("Setting up player for video:", videoId);
 
-      const container = document.getElementById(playerId);
-      if (!container) {
         const div = document.createElement('div');
         div.id = playerId;
         playerRef.current.appendChild(div);
-      }
 
-      new window.YT.Player(playerId, {
-        videoId: videoId,
-        height: '1',
-        width: '1',
-        playerVars: {
-          autoplay: autoplay ? 1 : 0,
-          controls: 0,
-          disablekb: 1,
-          fs: 0,
-          rel: 0,
-          modestbranding: 1,
-          start: Math.floor(startTime)
-        },
-        events: {
-          onReady: handlePlayerReady,
-          onStateChange: handleStateChange
-        }
-      });
-    } catch (error) {
-      console.error("Error initializing player for video:", videoId, error);
+        new window.YT.Player(playerId, {
+          videoId: videoId,
+          height: '1',
+          width: '1',
+          playerVars: {
+            autoplay: autoplay ? 1 : 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            rel: 0,
+            modestbranding: 1,
+            start: Math.floor(startTime)
+          },
+          events: {
+            onReady: handlePlayerReady,
+            onStateChange: handleStateChange
+          }
+        });
+      } catch (error) {
+        console.error("Error initializing player for video:", videoId, error);
+      }
     }
-  }
+  }, [isAPIReady, videoId, startTime, autoplay, handlePlayerReady, handleStateChange, playerId]);
 
   return {
     playerRef,
