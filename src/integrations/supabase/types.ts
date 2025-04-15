@@ -13,21 +13,27 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
+          first_login: boolean
           id: string
+          is_public: boolean
           updated_at: string | null
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
+          first_login?: boolean
           id: string
+          is_public?: boolean
           updated_at?: string | null
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
+          first_login?: boolean
           id?: string
+          is_public?: boolean
           updated_at?: string | null
           username?: string | null
         }

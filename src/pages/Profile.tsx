@@ -8,12 +8,16 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
 import { UserSniplistStats } from "@/components/profile/UserSniplistStats";
+import { PrivacyToggle } from "@/components/profile/PrivacyToggle";
+import { FirstLoginDialog } from "@/components/profile/FirstLoginDialog";
 
 export default function Profile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [isPublic, setIsPublic] = useState(true);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   useEffect(() => {
     getProfile();
@@ -32,13 +36,17 @@ export default function Profile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, is_public, first_login')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
       
-      if (data) setUsername(data.username || "");
+      if (data) {
+        setUsername(data.username || "");
+        setIsPublic(data.is_public);
+        setIsFirstLogin(data.first_login);
+      }
     } catch (error) {
       toast.error("Error loading profile");
     } finally {
@@ -90,6 +98,10 @@ export default function Profile() {
                   placeholder="Enter a username"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Privacy Settings</label>
+                <PrivacyToggle initialValue={isPublic} />
+              </div>
               <Button onClick={updateProfile}>
                 Update Profile
               </Button>
@@ -106,6 +118,11 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      <FirstLoginDialog 
+        open={isFirstLogin} 
+        onClose={() => setIsFirstLogin(false)} 
+      />
     </>
   );
 }
