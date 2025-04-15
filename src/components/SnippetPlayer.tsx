@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -8,9 +7,10 @@ interface SnippetPlayerProps {
   startTime: number;
   endTime: number;
   autoplay?: boolean;
+  onEnded?: () => void;
 }
 
-export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false }: SnippetPlayerProps) {
+export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, onEnded }: SnippetPlayerProps) {
   const [player, setPlayer] = useState<YT.Player | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +98,9 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false }:
               setIsPlaying(true);
             } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
               setIsPlaying(false);
+              if (event.data === YT.PlayerState.ENDED && onEnded) {
+                onEnded();
+              }
             }
           }
         }
@@ -137,6 +140,10 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false }:
             setIsPlaying(false);
             clearInterval(intervalRef.current as number);
             intervalRef.current = null;
+            
+            if (onEnded) {
+              onEnded();
+            }
           }
         } catch (e) {
           console.error("Error in playback monitoring:", e);
