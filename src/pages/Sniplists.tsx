@@ -17,26 +17,33 @@ export default function Sniplists() {
   const [sniplists, setSniplists] = useState<Sniplist[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSniplists();
-  }, []);
-
-  useEffect(() => {
-    const playId = searchParams.get('play');
-    if (playId) {
-      // Find the sniplist in our list and auto-play it
-      const sniplist = sniplists.find(s => s.id === playId);
-      if (sniplist) {
-        // We'll let the SniplistCard handle the actual playing
-        const element = document.getElementById(`sniplist-${playId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-          element.click();
-        }
-      }
+    const userId = searchParams.get('userId');
+    
+    if (userId) {
+      fetchUserProfile(userId);
+      fetchUserSniplists(userId);
+    } else {
+      fetchSniplists();
     }
-  }, [searchParams, sniplists]);
+  }, [searchParams]);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      setUsername(data.username || 'User');
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchSniplists = async () => {
     try {
@@ -51,6 +58,25 @@ export default function Sniplists() {
     } catch (error: any) {
       console.error('Error fetching sniplists:', error);
       toast.error(`Failed to load sniplists: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserSniplists = async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('sniplists')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setSniplists(data || []);
+    } catch (error: any) {
+      console.error('Error fetching user sniplists:', error);
+      toast.error(`Failed to load user sniplists: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -78,8 +104,14 @@ export default function Sniplists() {
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h1 className="text-2xl font-bold mb-6">My Sniplists</h1>
-          <SniplistsList sniplists={sniplists} loading={loading} onDelete={handleDelete} />
+          <h1 className="text-2xl font-bold mb-6">
+            {username ? `${username}'s Sniplists` : 'My Sniplists'}
+          </h1>
+          <SniplistsList 
+            sniplists={sniplists} 
+            loading={loading} 
+            onDelete={handleDelete} 
+          />
         </div>
       </main>
     </div>

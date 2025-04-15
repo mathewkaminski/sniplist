@@ -204,6 +204,15 @@ export type Database = {
       }
     }
     Functions: {
+      get_top_users: {
+        Args: { limit_count: number }
+        Returns: {
+          user_id: string
+          username: string
+          total_plays: number
+          plays_with_two_plus_songs: number
+        }[]
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
