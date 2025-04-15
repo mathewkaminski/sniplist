@@ -78,48 +78,27 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 Type at least 3 characters to search
               </div>
             )}
-            
+          
             {hasMinimumChars && !isLoading && safeResults.length === 0 && (
               <CommandEmpty>No results found.</CommandEmpty>
             )}
-            
+          
             {hasMinimumChars && isLoading && (
               <div className="py-6 text-center text-sm">
                 Searching...
               </div>
             )}
-            
-            {profileResults.length > 0 && (
-              <CommandGroup heading="Users">
-                {profileResults.map((result) => (
+          
+            {safeResults.length > 0 && (
+              <CommandGroup heading="All Results">
+                {safeResults.map((result) => (
                   <CommandItem
                     key={`${result.type}-${result.id}`}
                     onSelect={() => handleSelect(result)}
                     className="flex items-center gap-2"
                   >
-                    <Users className="w-4 h-4 text-blue-500" />
                     <span>{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">Profile</Badge>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            
-            {profileResults.length > 0 && sniplistResults.length > 0 && (
-              <Separator className="my-1" />
-            )}
-            
-            {sniplistResults.length > 0 && (
-              <CommandGroup heading="Sniplists">
-                {sniplistResults.map((result) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-2"
-                  >
-                    <ListMusic className="w-4 h-4 text-green-500" />
-                    <span>{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">Sniplist</Badge>
+                    <Badge variant="outline" className="ml-auto">{result.type}</Badge>
                   </CommandItem>
                 ))}
               </CommandGroup>
