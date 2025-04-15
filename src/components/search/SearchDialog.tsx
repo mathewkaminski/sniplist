@@ -76,19 +76,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             </CommandList>
           ) : hasMinimumChars && results.length > 0 ? (
             <CommandList className="max-h-[300px] overflow-y-auto">
-              <CommandGroup heading="All Results">
-                {results.map((result) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-2"
-                  >
-                    <span>{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">
-                      {result.type}
-                    </Badge>
-                  </CommandItem>
-                ))}
+              <CommandGroup heading="Test Group">
+                <CommandItem onSelect={() => console.log("Clicked")} className="flex items-center gap-2">
+                  <span>Alvvvays</span>
+                  <Badge variant="outline" className="ml-auto">sniplist</Badge>
+                </CommandItem>
               </CommandGroup>
             </CommandList>
           ) : (
