@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Command,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/command";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, Users, ListMusic } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { useEffect } from "react";
@@ -54,7 +55,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         onOpenChange(isOpen);
       }}
     >
-      <DialogContent className="z-50 max-w-md p-0 bg-white shadow-xl border rounded-md">
+      <DialogContent className="z-50 max-w-md p-0 overflow-hidden bg-white shadow-xl border rounded-md">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <Command>
           <div className="flex items-center border-b px-3 py-2">
@@ -68,21 +69,24 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
 
-          {isLoading ? (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-gray-50">
+          <CommandList className="max-h-[300px] overflow-y-auto">
+            {isLoading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
-            </CommandList>
-          ) : hasMinimumChars && results.length > 0 ? (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-white">
-              <CommandGroup heading="Results">
-                {results.map((result, idx) => {
-                  if (!result?.title || !result?.id || !result?.type) return null;
+            ) : hasMinimumChars && results.length > 0 ? (
+              <CommandGroup heading="All Results">
+                {results.map((result) => {
+                  console.log("🧪 Rendering result:", result);
                   return (
                     <CommandItem
-                      key={`${result.type}-${result.id}-${idx}`}
+                      key={`${result.type}-${result.id}`}
                       onSelect={() => handleSelect(result)}
                       className="flex items-center gap-2"
                     >
+                      {result.type?.toLowerCase() === 'profile' ? (
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ListMusic className="h-4 w-4 text-muted-foreground" />
+                      )}
                       <span>{result.title}</span>
                       <Badge variant="outline" className="ml-auto">
                         {result.type}
@@ -91,15 +95,16 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   );
                 })}
               </CommandGroup>
-            </CommandList>
-          ) : (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-white">
+            ) : hasMinimumChars ? (
               <CommandEmpty>No results found.</CommandEmpty>
-            </CommandList>
-          )}
+            ) : (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Type at least 3 characters to search
+              </div>
+            )}
+          </CommandList>
         </Command>
       </DialogContent>
     </Dialog>
   );
 }
-
