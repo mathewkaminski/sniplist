@@ -22,11 +22,17 @@ export function useSearch() {
       try {
         console.log("Searching for:", searchTerm);
         
-        const { data, error } = await supabase
+        // Try with explicit ilike and log the query
+        const query = supabase
           .from('search_results')
           .select('*')
           .ilike('title', `%${searchTerm}%`)
+          .order('created_at', { ascending: false })
           .limit(20);
+        
+        console.log("Query URL:", query.url);
+        
+        const { data, error } = await query;
 
         if (error) {
           console.error('Search error:', error);
@@ -34,6 +40,25 @@ export function useSearch() {
         }
         
         console.log("Search results:", data);
+        
+        // If no results, try a direct query with more debug information
+        if (!data || data.length === 0) {
+          console.log("No results found, trying direct query with more logging");
+          
+          // Get all results to see what's available
+          const { data: allResults, error: allError } = await supabase
+            .from('search_results')
+            .select('*')
+            .limit(5);
+          
+          if (allError) {
+            console.error("Error fetching sample results:", allError);
+          } else {
+            console.log("Sample from search_results view:", allResults);
+            console.log("Available titles:", allResults?.map(r => r.title));
+          }
+        }
+        
         return data as SearchResult[];
       } catch (err) {
         console.error('Unexpected search error:', err);

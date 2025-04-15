@@ -7,6 +7,7 @@ import { Users, ListMusic, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useEffect } from "react";
 
 interface SearchDialogProps {
   open: boolean;
@@ -16,6 +17,16 @@ interface SearchDialogProps {
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
+
+  // Debug logging for component state
+  useEffect(() => {
+    console.log("SearchDialog state:", { 
+      searchTerm, 
+      resultsCount: results.length, 
+      isLoading, 
+      hasMinimumChars 
+    });
+  }, [searchTerm, results, isLoading, hasMinimumChars]);
 
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
@@ -29,9 +40,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       toast.success(`Playing sniplist`);
     }
   };
-
-  // Log current state for debugging
-  console.log("SearchDialog state:", { searchTerm, resultsCount: results.length, isLoading, hasMinimumChars });
 
   // Group results by type
   const profileResults = results.filter(result => result.type === 'profile');
