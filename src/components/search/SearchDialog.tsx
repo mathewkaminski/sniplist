@@ -19,6 +19,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
+    setSearchTerm(''); // Reset search term when selecting a result
+    
     if (result.type === 'profile') {
       navigate(`/profile/${result.id}`);
       toast.success(`Viewing profile`);
@@ -28,12 +30,18 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
   };
 
+  // Log current state for debugging
+  console.log("SearchDialog state:", { searchTerm, resultsCount: results.length, isLoading, hasMinimumChars });
+
   // Group results by type
   const profileResults = results.filter(result => result.type === 'profile');
   const sniplistResults = results.filter(result => result.type === 'sniplist');
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) setSearchTerm(''); // Clear search when closing dialog
+      onOpenChange(isOpen);
+    }}>
       <DialogContent className="overflow-hidden p-0 max-w-md">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <Command>
@@ -44,6 +52,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               value={searchTerm}
               onValueChange={setSearchTerm}
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              autoFocus
             />
           </div>
           <CommandList>
