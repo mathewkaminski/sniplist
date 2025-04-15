@@ -43,9 +43,9 @@ export function Header() {
           onClick={handleHomeClick}
         >
           <img 
-            src="/lovable-uploads/484c4368-6966-4be2-9e37-7e19f30ea508.png" 
+            src="/lovable-uploads/eb22d499-0ec7-4fa4-b90f-04e62c935fa9.png" 
             alt="Sniplist Logo" 
-            className="h-8 w-8"
+            className="h-10 w-10" // Increased size by about 20%
           />
           Sniplist
         </Button>
