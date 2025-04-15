@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,7 +20,6 @@ export function useSniplistsData(userId?: string) {
   useEffect(() => {
     console.log("🧪 Hook received userId:", userId);
 
-    // Don't treat the literal string ":userId" as a valid ID
     if (userId && userId !== ":userId") {
       console.log("🧪 Triggering checkUserAccess with userId:", userId);
       checkUserAccess(userId);
