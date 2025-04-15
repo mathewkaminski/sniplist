@@ -23,7 +23,7 @@ export function useSearch() {
         console.log("Executing search with Edge Function, term:", trimmedTerm);
 
         const { data, error } = await supabase.functions.invoke('search_sniplists', {
-          body: { searchTerm: trimmedTerm }
+          body: { searchTerm: `%${trimmedTerm}%` } // Add wildcard symbols here
         });
 
         if (error) {
