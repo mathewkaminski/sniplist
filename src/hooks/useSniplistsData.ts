@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,16 +18,19 @@ export function useSniplistsData(userId?: string) {
   const [noSniplists, setNoSniplists] = useState(false);
 
   useEffect(() => {
-    // Avoid querying with an invalid userId like ":userId"
+    console.log("🧪 Hook received userId:", userId);
+
     if (userId && userId !== ":userId") {
-      console.log('Detected userId in URL:', userId);
+      console.log("🧪 Triggering checkUserAccess with userId:", userId);
       checkUserAccess(userId);
     } else {
+      console.log("🧪 Triggering fetchSniplists (no userId)");
       fetchSniplists();
     }
   }, [userId]);
 
   const checkUserAccess = async (userId: string) => {
+    console.log("🧪 Inside checkUserAccess for:", userId);
     try {
       const { data: authData } = await supabase.auth.getUser();
       console.log('Auth data:', authData);
@@ -106,7 +108,6 @@ export function useSniplistsData(userId?: string) {
       setLoading(true);
       console.log('Fetching sniplists for user:', userId);
 
-      // Instead of using RPC, use regular select with user_id filter
       const { data, error } = await supabase
         .from('sniplists')
         .select('*')
