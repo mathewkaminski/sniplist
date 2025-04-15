@@ -13,7 +13,7 @@ interface SearchResult {
 export function useSearch() {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: results, isLoading } = useQuery({
+  const { data: results = [], isLoading } = useQuery({
     queryKey: ['search', searchTerm],
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
@@ -24,7 +24,11 @@ export function useSearch() {
         .ilike('title', `%${searchTerm}%`)
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Search error:', error);
+        return [];
+      }
+      
       return data as SearchResult[];
     },
     enabled: searchTerm.trim().length > 0

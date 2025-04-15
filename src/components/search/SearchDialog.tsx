@@ -4,6 +4,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
 import { Users, ListMusic } from "lucide-react";
+import { toast } from "sonner";
 
 interface SearchDialogProps {
   open: boolean;
@@ -18,8 +19,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     onOpenChange(false);
     if (result.type === 'profile') {
       navigate(`/profile/${result.id}`);
+      toast.success(`Viewing profile`);
     } else {
       navigate(`/sniplists?play=${result.id}`);
+      toast.success(`Playing sniplist`);
     }
   };
 
