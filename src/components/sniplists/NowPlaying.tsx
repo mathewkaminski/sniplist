@@ -1,10 +1,10 @@
-
-import { ListMusic } from "lucide-react";
+import { ListMusic, ExternalLink } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
 import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
 import { useEffect } from "react";
+import { getYoutubeVideoUrl } from "@/utils/youtube";
 
 interface NowPlayingProps {
   currentSnippet: Snippet;
@@ -25,12 +25,10 @@ export function NowPlaying({
   onSnippetSelect,
   setPlaylistComplete
 }: NowPlayingProps) {
-  // Log when the component renders with a new snippet
   useEffect(() => {
     console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
   }, [currentSnippet, currentSnippetIndex, snippets.length]);
 
-  // Determine the display title - use the title, fallback to YouTube title, or "Untitled"
   const displayTitle = currentSnippet.title || currentSnippet.youtube_title || 'Untitled';
   
   return (
@@ -45,6 +43,15 @@ export function NowPlaying({
               <span className="text-gray-500 text-sm ml-2">
                 ({currentSnippetIndex + 1}/{snippets.length})
               </span>
+              <a 
+                href={getYoutubeVideoUrl(currentSnippet.video_id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 inline-flex items-center text-blue-500 hover:text-blue-700"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="ml-1">YouTube</span>
+              </a>
             </span>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
