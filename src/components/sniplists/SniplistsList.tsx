@@ -11,9 +11,10 @@ interface Sniplist {
 interface SniplistsListProps {
   sniplists: Sniplist[];
   loading: boolean;
+  onDelete?: (id: string) => void;
 }
 
-export function SniplistsList({ sniplists, loading }: SniplistsListProps) {
+export function SniplistsList({ sniplists, loading, onDelete }: SniplistsListProps) {
   if (loading) {
     return <p>Loading sniplists...</p>;
   }
@@ -30,6 +31,7 @@ export function SniplistsList({ sniplists, loading }: SniplistsListProps) {
           id={sniplist.id}
           title={sniplist.title}
           created_at={sniplist.created_at}
+          onDelete={onDelete}
         />
       ))}
     </div>
