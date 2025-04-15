@@ -1,11 +1,13 @@
-
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Home, ListMusic, FileText, HelpCircle } from "lucide-react";
+import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { SearchDialog } from "./search/SearchDialog";
 
 export function Header() {
   const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const handleHomeClick = () => {
     navigate("/");
@@ -50,6 +52,13 @@ export function Header() {
           Sniplist
         </Button>
         <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-5 w-5 text-gray-600" />
+          </Button>
           <Button variant="ghost" className="text-black" onClick={() => navigate("/contact-us")}>
             <HelpCircle className="mr-2 h-4 w-4 text-black" />
             Help
@@ -61,6 +70,11 @@ export function Header() {
           <UserMenu />
         </div>
       </div>
+      
+      <SearchDialog 
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+      />
     </header>
   );
 }
