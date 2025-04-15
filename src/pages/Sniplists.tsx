@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,11 +136,14 @@ export default function Sniplists() {
           return;
         }
 
-        // If that fails, try using a raw query
+        // Instead of using RPC, use a direct SQL query with the function name
         const { data: rawQueryResult, error: rawQueryError } = await supabase
-          .rpc('get_user_sniplists', { user_id_param: userId });
+          .from('sniplists')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
         
-        console.log('Raw query for Navigator327 sniplists:', rawQueryResult, rawQueryError);
+        console.log('Direct SQL query for Navigator327 sniplists:', rawQueryResult, rawQueryError);
         
         if (rawQueryResult && rawQueryResult.length > 0) {
           setSniplists(rawQueryResult);
