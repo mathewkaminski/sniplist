@@ -4,6 +4,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { SearchDialog } from "./search/SearchDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Header() {
   const navigate = useNavigate();
@@ -11,6 +12,15 @@ export function Header() {
 
   const handleHomeClick = () => {
     navigate("/");
+  };
+
+  const handleMySniplists = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      navigate(`/user/${user.id}/sniplists`);
+    } else {
+      navigate("/auth");
+    }
   };
 
   return (
@@ -27,14 +37,14 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/my-list")}
+            onClick={handleMySniplists}
           >
             <ListMusic className="h-6 w-6 text-black" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/sniplists")}
+            onClick={handleMySniplists}
           >
             <FileText className="h-6 w-6 text-black" />
           </Button>
