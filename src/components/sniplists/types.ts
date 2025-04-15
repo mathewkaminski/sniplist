@@ -5,7 +5,7 @@ export interface Snippet {
   video_id: string;
   start_time: number;
   end_time: number;
-  artist?: string;
+  comments?: string;
   youtube_title?: string;
 }
 

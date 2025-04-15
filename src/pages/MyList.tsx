@@ -52,7 +52,7 @@ export default function MyList() {
       <EditTitleDialog
         open={dialogOpen}
         title={editingTitle}
-        artist={editingArtist}
+        comments={editingArtist}
         onOpenChange={setDialogOpen}
         onSave={handleUpdateDetails}
         onTitleChange={setEditingTitle}

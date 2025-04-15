@@ -81,7 +81,7 @@ export function useSnippets() {
     }
   };
 
-  const handleUpdateDetails = async (newTitle: string, newArtist: string) => {
+  const handleUpdateDetails = async (newTitle: string, newComments: string) => {
     if (!editingId || !newTitle.trim()) {
       toast.error("Title cannot be empty");
       return;
@@ -92,7 +92,7 @@ export function useSnippets() {
         .from('snippets')
         .update({ 
           title: newTitle.trim(),
-          artist: newArtist.trim() || null
+          comments: newComments.trim() || null
         })
         .eq('id', editingId);
       
@@ -100,7 +100,7 @@ export function useSnippets() {
       
       setSnippets(snippets.map(snippet => 
         snippet.id === editingId 
-          ? { ...snippet, title: newTitle.trim(), artist: newArtist.trim() || null }
+          ? { ...snippet, title: newTitle.trim(), comments: newComments.trim() || null }
           : snippet
       ));
       
@@ -115,7 +115,7 @@ export function useSnippets() {
   const openEditDialog = (snippet: Snippet) => {
     setEditingId(snippet.id);
     setEditingTitle(snippet.title);
-    setEditingArtist(snippet.artist || '');
+    setEditingArtist(snippet.comments || '');
     setDialogOpen(true);
   };
 

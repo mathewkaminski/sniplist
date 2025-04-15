@@ -85,7 +85,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
             video_id,
             start_time,
             end_time,
-            artist
+            comments
           )
         `)
         .eq('sniplist_id', sniplistId)

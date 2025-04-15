@@ -1,7 +1,8 @@
+
 export interface Snippet {
   id: string;
   title: string;
-  artist?: string;
+  comments?: string;
   video_id: string;
   start_time: number;
   end_time: number;
