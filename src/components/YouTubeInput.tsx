@@ -21,9 +21,11 @@ export function YouTubeInput() {
     }
 
     setIsLoading(true);
-    const newVideoId = extractYouTubeId(url);
+    setVideoId(null);  // Clear the previous video ID
     
     try {
+      const newVideoId = extractYouTubeId(url);
+      
       if (newVideoId) {
         setVideoId(newVideoId);
         toast.success("Video loaded successfully");
