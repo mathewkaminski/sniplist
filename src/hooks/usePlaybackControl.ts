@@ -1,5 +1,6 @@
 
 import { useCallback } from 'react';
+import { usePlaybackInterval } from './usePlaybackInterval';
 
 interface UsePlaybackControlProps {
   player: YT.Player | null;
@@ -22,6 +23,16 @@ export function usePlaybackControl({
   cleanupInterval,
   onEnded
 }: UsePlaybackControlProps) {
+  const { startInterval } = usePlaybackInterval({
+    player,
+    endTime,
+    isPlaying,
+    intervalRef,
+    setIsPlaying,
+    cleanupInterval,
+    onEnded
+  });
+
   const togglePlayPause = useCallback(() => {
     if (!player) {
       console.log("Player not ready yet");
@@ -36,28 +47,9 @@ export function usePlaybackControl({
       player.seekTo(startTime, true);
       player.playVideo();
       setIsPlaying(true);
-      
-      intervalRef.current = window.setInterval(() => {
-        if (!player) return;
-        
-        try {
-          const currentTime = player.getCurrentTime();
-          if (currentTime >= endTime) {
-            player.pauseVideo();
-            setIsPlaying(false);
-            cleanupInterval();
-            
-            if (onEnded) {
-              onEnded();
-            }
-          }
-        } catch (e) {
-          console.error("Error in playback monitoring:", e);
-          cleanupInterval();
-        }
-      }, 100);
+      startInterval();
     }
-  }, [player, isPlaying, startTime, endTime, onEnded, cleanupInterval, setIsPlaying, intervalRef]);
+  }, [player, isPlaying, startTime, cleanupInterval, setIsPlaying, startInterval]);
 
   return {
     togglePlayPause
