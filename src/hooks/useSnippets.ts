@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,9 +34,14 @@ export function useSnippets() {
         (data || []).map(async (snippet) => {
           try {
             const videoData = await fetchVideoData(snippet.video_id);
+            
+            // Check if the title is the default format that uses timestamps
+            const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+            
             return {
               ...snippet,
-              title: snippet.title,
+              // If it's a default title and we got a YouTube title, use that instead
+              title: isDefaultTitle && videoData.title ? videoData.title : snippet.title,
               uploader: videoData.uploader
             };
           } catch (err) {

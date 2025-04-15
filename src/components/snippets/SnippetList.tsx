@@ -1,28 +1,15 @@
-import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Trash2, ExternalLink, Plus } from "lucide-react";
-import { formatDistance } from "date-fns";
-import { SnippetPlayer } from "@/components/SnippetPlayer";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getYoutubeVideoUrl } from "@/utils/youtube";
 
-interface Snippet {
-  id: string;
-  title: string;
-  video_id: string;
-  start_time: number;
-  end_time: number;
-  created_at: string;
-  youtube_title?: string;
-  uploader?: string;
-}
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash, CheckCircle } from "lucide-react";
+import { Snippet } from "./types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface SnippetListProps {
   snippets: Snippet[];
@@ -33,98 +20,67 @@ interface SnippetListProps {
   onSnippetSelect?: (id: string) => void;
 }
 
-export function SnippetList({ 
-  snippets, 
-  onDelete, 
+export function SnippetList({
+  snippets,
+  onDelete,
   onEdit,
   isSelecting = false,
   selectedSnippets = [],
-  onSnippetSelect
+  onSnippetSelect = () => {},
 }: SnippetListProps) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          {isSelecting && <TableHead className="w-16">Select</TableHead>}
+          {isSelecting && <TableHead className="w-[50px]">Select</TableHead>}
           <TableHead>Title</TableHead>
           <TableHead>Uploader</TableHead>
-          <TableHead>Audio</TableHead>
-          <TableHead>Time Range</TableHead>
-          <TableHead className="w-24 text-right">Created</TableHead>
-          <TableHead className="w-28 text-right">Actions</TableHead>
+          <TableHead>Start Time</TableHead>
+          <TableHead>End Time</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {snippets.map((snippet) => (
-          <TableRow key={snippet.id}>
+          <TableRow
+            key={snippet.id}
+            className={isSelecting && selectedSnippets.includes(snippet.id) ? "bg-muted" : ""}
+          >
             {isSelecting && (
               <TableCell>
                 <Button
-                  variant={selectedSnippets.includes(snippet.id) ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => onSnippetSelect?.(snippet.id)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onSnippetSelect(snippet.id)}
                 >
-                  <Plus className="h-4 w-4" />
+                  {selectedSnippets.includes(snippet.id) ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border" />
+                  )}
                 </Button>
               </TableCell>
             )}
-            <TableCell 
-              className="font-medium max-w-xs cursor-pointer hover:bg-muted/50"
-              onClick={() => onEdit(snippet)}
-            >
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="truncate" title={snippet.title}>
-                    {snippet.title}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {snippet.title}
-                </TooltipContent>
-              </Tooltip>
-            </TableCell>
-            <TableCell>
-              {snippet.uploader || 'Unknown'}
-            </TableCell>
-            <TableCell>
-              <SnippetPlayer 
-                videoId={snippet.video_id}
-                startTime={snippet.start_time}
-                endTime={snippet.end_time}
-              />
-            </TableCell>
-            <TableCell>{`${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`}</TableCell>
-            <TableCell className="w-24 text-right">
-              {formatDistance(new Date(snippet.created_at), new Date(), { addSuffix: true })}
-            </TableCell>
-            <TableCell className="w-28 text-right">
-              <div className="flex justify-end gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      asChild
-                    >
-                      <a 
-                        href={getYoutubeVideoUrl(snippet.video_id)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="h-4 w-4 text-blue-500" />
-                      </a>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Open in YouTube
-                  </TooltipContent>
-                </Tooltip>
-                <Button 
-                  variant="ghost" 
+            <TableCell className="font-medium">{snippet.title}</TableCell>
+            <TableCell>{snippet.uploader || "Unknown"}</TableCell>
+            <TableCell>{snippet.start_time}s</TableCell>
+            <TableCell>{snippet.end_time}s</TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onEdit(snippet)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={() => onDelete(snippet.id)}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <Trash className="h-4 w-4" />
                 </Button>
               </div>
             </TableCell>
