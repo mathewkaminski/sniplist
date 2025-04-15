@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { EditTitleDialog } from "@/components/snippets/EditTitleDialog";
 import { CreateSniplistDialog } from "@/components/snippets/CreateSniplistDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Check } from "lucide-react";
+import { fetchVideoTitle } from "@/utils/youtube";
 
 interface Snippet {
   id: string;
@@ -46,12 +48,20 @@ export default function MyList() {
 
       const snippetsWithTitles = await Promise.all(
         (data || []).map(async (snippet) => {
+          // Check if the title is the default format that uses timestamps
           const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
           
           try {
-            const youtubeTitle = isDefaultTitle ? await fetchVideoTitle(snippet.video_id) : null;
+            let youtubeTitle = null;
+            
+            // Only fetch YouTube title if the current title is the default one
+            if (isDefaultTitle) {
+              youtubeTitle = await fetchVideoTitle(snippet.video_id);
+            }
+            
             return {
               ...snippet,
+              // If it's a default title and we got a YouTube title, use that instead
               title: isDefaultTitle && youtubeTitle ? youtubeTitle : snippet.title,
               youtube_title: youtubeTitle
             };

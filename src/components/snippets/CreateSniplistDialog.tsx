@@ -37,10 +37,21 @@ export function CreateSniplistDialog({
     try {
       setLoading(true);
 
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to create a Sniplist");
+        return;
+      }
+
       // Create the sniplist
       const { data: sniplist, error: sniplistError } = await supabase
         .from('sniplists')
-        .insert({ title: title.trim() })
+        .insert({ 
+          title: title.trim(),
+          user_id: user.id // Add the user_id field
+        })
         .select()
         .single();
 

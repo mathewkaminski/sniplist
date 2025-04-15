@@ -1,3 +1,4 @@
+
 import { 
   Table, 
   TableHeader, 
@@ -7,7 +8,7 @@ import {
   TableCell 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, ExternalLink } from "lucide-react";
+import { Trash2, ExternalLink, Plus } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
