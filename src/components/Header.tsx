@@ -63,7 +63,7 @@ export function Header() {
             <HelpCircle className="mr-2 h-4 w-4 text-black" />
             Help
           </Button>
-          <Button variant="ghost" className="text-black">
+          <Button variant="ghost" className="text-black" onClick={handleHomeClick}>
             <PlusCircle className="mr-2 h-4 w-4 text-black" />
             Add Snippet
           </Button>
