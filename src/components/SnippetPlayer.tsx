@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -13,23 +14,33 @@ interface SnippetPlayerProps {
 export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, onEnded }: SnippetPlayerProps) {
   const [player, setPlayer] = useState<YT.Player | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInitialized = useRef(false);
   const intervalRef = useRef<number | null>(null);
   const playerId = `youtube-player-${videoId}-${startTime}-${Math.random().toString(36).substring(2, 9)}`;
 
+  // Load YouTube API if not already loaded
   useEffect(() => {
-    // Only load YouTube API if not already loaded
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
+      tag.onload = () => {
+        // Once the API is loaded, we can initialize the player
+        if (window.YT && window.YT.Player) {
+          initializePlayer();
+        } else {
+          window.onYouTubeIframeAPIReady = initializePlayer;
+        }
+      };
       const firstScriptTag = document.getElementsByTagName('script')[0];
       firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-      
-      window.onYouTubeIframeAPIReady = initializePlayer;
-    } else if (!playerInitialized.current) {
-      // If YouTube API is loaded but player is not initialized
+    } else if (window.YT && window.YT.Player) {
+      // API is already loaded, initialize player
       initializePlayer();
+    } else {
+      // API is loading but not ready, wait for it
+      window.onYouTubeIframeAPIReady = initializePlayer;
     }
 
     return () => {
@@ -48,12 +59,12 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
   }, [videoId, startTime]);
 
   const initializePlayer = () => {
-    if (!window.YT || !playerRef.current) {
-      console.log("YouTube API not ready or container not found");
+    if (playerInitialized.current || !window.YT || !window.YT.Player) {
       return;
     }
     
-    if (playerInitialized.current) {
+    if (!playerRef.current) {
+      console.log("Player container not found");
       return;
     }
     
@@ -66,15 +77,13 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
       if (!container) {
         const div = document.createElement('div');
         div.id = playerId;
-        div.style.width = '1px';
-        div.style.height = '1px';
-        div.style.position = 'absolute';
-        div.style.opacity = '0';
         playerRef.current.appendChild(div);
       }
       
       const newPlayer = new window.YT.Player(playerId, {
         videoId: videoId,
+        height: '1',
+        width: '1',
         playerVars: {
           autoplay: autoplay ? 1 : 0,
           controls: 0,
@@ -88,6 +97,7 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
           onReady: (event: YT.PlayerEvent) => {
             console.log("Snippet player ready for video:", videoId);
             setPlayer(event.target);
+            setPlayerReady(true);
             if (autoplay) {
               event.target.playVideo();
               setIsPlaying(true);
@@ -102,6 +112,9 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
                 onEnded();
               }
             }
+          },
+          onError: (event: any) => {
+            console.error("YouTube player error:", event);
           }
         }
       });
@@ -111,7 +124,7 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
   };
 
   const togglePlayPause = () => {
-    if (!player) {
+    if (!player || !playerReady) {
       console.log("Player not ready yet");
       return;
     }
@@ -163,6 +176,8 @@ export function SnippetPlayer({ videoId, startTime, endTime, autoplay = false, o
         size="icon" 
         variant="ghost"
         onClick={togglePlayPause}
+        disabled={!playerReady}
+        title={playerReady ? (isPlaying ? "Pause" : "Play") : "Loading player..."}
       >
         {isPlaying ? (
           <Pause className="h-4 w-4" />
