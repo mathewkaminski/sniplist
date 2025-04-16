@@ -74,9 +74,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           </div>
 
           <CommandList className="max-h-[300px] overflow-y-auto">
-            {isLoading ? (
+            {isLoading && (
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
-            ) : hasMinimumChars && results.length > 0 ? (
+            )}
+          
+            {!isLoading && hasMinimumChars && results.length > 0 && (
               <CommandGroup heading="Results">
                 {results.map((result, idx) => (
                   <CommandItem
@@ -89,9 +91,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   </CommandItem>
                 ))}
               </CommandGroup>
-            ) : (
-              <CommandEmpty>No results found.</CommandEmpty>
             )}
+          
+            {/* Must be rendered unconditionally */}
+            <CommandEmpty>No results found.</CommandEmpty>
           </CommandList>
         </Command>
       </DialogContent>
