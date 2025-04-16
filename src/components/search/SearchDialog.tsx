@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -51,11 +52,14 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) setSearchTerm("");
-      onOpenChange(isOpen);
-    }}>
-      <DialogContent className="z-50 max-w-md p-0 bg-white shadow-xl border rounded-md">
+    <Dialog 
+      open={open} 
+      onOpenChange={(isOpen) => {
+        if (!isOpen) setSearchTerm("");
+        onOpenChange(isOpen);
+      }}
+    >
+      <DialogContent className="z-50 max-w-md p-0 bg-white shadow-xl border rounded-md overflow-hidden">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <Command>
           <div className="flex items-center border-b px-3 py-2">
@@ -69,13 +73,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
 
-          {/* Results */}
-          {isLoading ? (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-gray-50">
+          <CommandList className="max-h-[300px] overflow-y-auto">
+            {isLoading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
-            </CommandList>
-          ) : hasMinimumChars && results.length > 0 ? (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-white">
+            ) : hasMinimumChars && results.length > 0 ? (
               <CommandGroup heading="Results">
                 {results.map((result, idx) => (
                   <CommandItem
@@ -88,15 +89,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   </CommandItem>
                 ))}
               </CommandGroup>
-            </CommandList>
-          ) : (
-            <CommandList className="max-h-[300px] overflow-y-auto border-t bg-white">
+            ) : (
               <CommandEmpty>No results found.</CommandEmpty>
-            </CommandList>
-          )}
+            )}
+          </CommandList>
         </Command>
       </DialogContent>
     </Dialog>
   );
 }
-
