@@ -1,9 +1,8 @@
 
 import { formatDistance } from "date-fns";
 import { useState } from "react";
-import { SniplistPlayer } from "./SniplistPlayer";
 import { Button } from "@/components/ui/button";
-import { Share, Trash2, Pencil } from "lucide-react";
+import { Share, Trash2, Pencil, Play } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,10 +19,10 @@ interface SniplistCardProps {
   title: string;
   created_at: string;
   onDelete?: (id: string) => void;
+  onPlay?: (id: string) => void;
 }
 
-export function SniplistCard({ id, title, created_at, onDelete }: SniplistCardProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+export function SniplistCard({ id, title, created_at, onDelete, onPlay }: SniplistCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
 
@@ -55,6 +54,12 @@ export function SniplistCard({ id, title, created_at, onDelete }: SniplistCardPr
     toast.success('Share link copied to clipboard!');
   };
 
+  const handlePlay = () => {
+    if (onPlay) {
+      onPlay(id);
+    }
+  };
+
   return (
     <>
       <div 
@@ -63,7 +68,7 @@ export function SniplistCard({ id, title, created_at, onDelete }: SniplistCardPr
         <div className="flex justify-between items-start">
           <div 
             className="flex-grow cursor-pointer"
-            onClick={() => setIsPlaying(true)}
+            onClick={handlePlay}
           >
             <h2 className="text-xl font-semibold">{title}</h2>
             <p className="text-sm text-gray-500 mt-2">
@@ -74,23 +79,34 @@ export function SniplistCard({ id, title, created_at, onDelete }: SniplistCardPr
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsEditing(true)}
+              onClick={handlePlay}
             >
-              <Pencil className="h-4 w-4" />
+              <Play className="h-4 w-4 text-green-600" />
             </Button>
+            {onDelete && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </>
+            )}
             <Button
               variant="ghost"
               size="icon"
               onClick={handleShare}
             >
               <Share className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>
         </div>
@@ -121,13 +137,6 @@ export function SniplistCard({ id, title, created_at, onDelete }: SniplistCardPr
           </div>
         </DialogContent>
       </Dialog>
-
-      {isPlaying && (
-        <SniplistPlayer 
-          sniplistId={id} 
-          onClose={() => setIsPlaying(false)} 
-        />
-      )}
     </>
   );
 }

@@ -1,5 +1,7 @@
 
+import { useState } from "react";
 import { SniplistCard } from "./SniplistCard";
+import { SniplistPlayer } from "./SniplistPlayer";
 
 interface Sniplist {
   id: string;
@@ -15,6 +17,16 @@ interface SniplistsListProps {
 }
 
 export function SniplistsList({ sniplists, loading, onDelete }: SniplistsListProps) {
+  const [playingSniplistId, setPlayingSniplistId] = useState<string | null>(null);
+  
+  const handlePlay = (sniplistId: string) => {
+    setPlayingSniplistId(sniplistId);
+  };
+  
+  const handleClose = () => {
+    setPlayingSniplistId(null);
+  };
+
   if (loading) {
     return <p>Loading sniplists...</p>;
   }
@@ -32,8 +44,16 @@ export function SniplistsList({ sniplists, loading, onDelete }: SniplistsListPro
           title={sniplist.title}
           created_at={sniplist.created_at}
           onDelete={onDelete}
+          onPlay={handlePlay}
         />
       ))}
+      
+      {playingSniplistId && (
+        <SniplistPlayer 
+          sniplistId={playingSniplistId} 
+          onClose={handleClose} 
+        />
+      )}
     </div>
   );
 }

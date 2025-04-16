@@ -24,6 +24,15 @@ export function Header() {
     }
   };
 
+  const handleMySnippets = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      navigate("/my-list");
+    } else {
+      navigate("/auth");
+    }
+  };
+
   return (
     <header className="w-full border-b">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -45,7 +54,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleMySniplists}
+            onClick={handleMySnippets}
           >
             <FileText className="h-6 w-6 text-black" />
           </Button>
