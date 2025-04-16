@@ -76,49 +76,62 @@ export const useSniplistPlayback = (sniplistId: string) => {
       setLoading(true);
       console.log("Fetching snippets for sniplist:", sniplistId);
       
-      // Get the sniplist items with their associated snippets
-      const { data, error } = await supabase
+      // First, get all snippet_ids from the sniplist_items table
+      const { data: sniplistItemsData, error: sniplistItemsError } = await supabase
         .from('sniplist_items')
-        .select(`
-          snippet_id,
-          position,
-          snippets (
-            id,
-            title,
-            video_id,
-            start_time,
-            end_time,
-            comments
-          )
-        `)
+        .select('snippet_id, position')
         .eq('sniplist_id', sniplistId)
         .order('position');
 
-      if (error) {
-        console.error("Error fetching sniplist items:", error);
-        throw error;
+      if (sniplistItemsError) {
+        console.error("Error fetching sniplist items:", sniplistItemsError);
+        throw sniplistItemsError;
       }
 
-      console.log("Sniplist items data:", data);
+      if (!sniplistItemsData || sniplistItemsData.length === 0) {
+        console.log("No items found in sniplist:", sniplistId);
+        setSnippets([]);
+        setLoading(false);
+        return;
+      }
 
-      // Extract snippets from the response and add the sniplist_id to each snippet
-      let extractedSnippets = data
-        .filter(item => item.snippets && typeof item.snippets === 'object')
+      console.log("Sniplist items found:", sniplistItemsData);
+      
+      // Extract snippet_ids
+      const snippetIds = sniplistItemsData.map(item => item.snippet_id);
+      
+      // Then fetch the actual snippets data using those IDs
+      const { data: snippetsData, error: snippetsError } = await supabase
+        .from('snippets')
+        .select('*')
+        .in('id', snippetIds);
+
+      if (snippetsError) {
+        console.error("Error fetching snippets:", snippetsError);
+        throw snippetsError;
+      }
+
+      console.log("Fetched snippets data:", snippetsData);
+
+      // Map snippets to maintain the order from sniplist_items
+      const orderedSnippets = sniplistItemsData
         .map(item => {
-          // Make a copy of the snippet to avoid mutating the original
-          const snippet = { ...item.snippets } as Snippet;
-          
-          // Add sniplist_id to the snippet
-          snippet.sniplist_id = sniplistId;
-          
-          return snippet;
-        });
+          const snippet = snippetsData.find(s => s.id === item.snippet_id);
+          if (snippet) {
+            return {
+              ...snippet,
+              sniplist_id: sniplistId // Add sniplist_id to each snippet
+            };
+          }
+          return null;
+        })
+        .filter(Boolean) as Snippet[];
 
-      console.log("Extracted snippets:", extractedSnippets);
+      console.log("Ordered snippets:", orderedSnippets);
 
       // Process snippets to enhance titles if needed
       const enhancedSnippets = await Promise.all(
-        extractedSnippets.map(async (snippet) => {
+        orderedSnippets.map(async (snippet) => {
           // Check if the title is the default format that uses timestamps
           const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
           
