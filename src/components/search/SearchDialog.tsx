@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -28,15 +27,18 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
+  const shouldRenderResults = !isLoading && hasMinimumChars && results.length > 0;
+
   useEffect(() => {
     console.log("SearchDialog state:", {
       searchTerm,
       resultsCount: results?.length || 0,
       isLoading,
       hasMinimumChars,
+      shouldRenderResults,
       results,
     });
-  }, [searchTerm, results, isLoading, hasMinimumChars]);
+  }, [searchTerm, results, isLoading, hasMinimumChars, shouldRenderResults]);
 
   const handleSelect = (result: { type: string; id: string }) => {
     onOpenChange(false);
@@ -77,14 +79,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             {isLoading && (
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
             )}
-          
-            {!isLoading && hasMinimumChars && results.length > 0 && (
-              {console.log("🧪 Render logic:", {
-              isLoading,
-              hasMinimumChars,
-              resultsCount: results.length,
-              shouldRender: !isLoading && hasMinimumChars && results.length > 0
-          })}<CommandGroup heading="Results">
+
+            {shouldRenderResults && (
+              <CommandGroup heading="Results">
                 {results.map((result, idx) => (
                   <CommandItem
                     key={`${result.type}-${result.id}-${idx}`}
@@ -97,8 +94,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 ))}
               </CommandGroup>
             )}
-          
-            {/* Must be rendered unconditionally */}
+
+            {/* Always render CommandEmpty so fallback works */}
             <CommandEmpty>No results found.</CommandEmpty>
           </CommandList>
         </Command>
