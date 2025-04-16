@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  const shouldRenderResults = hasMinimumChars && results.length > 0;
+  // Safe results: ensures valid data only
+  const safeResults = Array.isArray(results)
+    ? results.filter(r => r?.title && r?.id && r?.type)
+    : [];
+
+  const shouldRenderResults = hasMinimumChars && safeResults.length > 0;
 
   useEffect(() => {
     console.log("SearchDialog state:", {
@@ -38,6 +42,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       hasMinimumChars,
       shouldRenderResults,
       results,
+      safeResults,
     });
   }, [searchTerm, results, isLoading, hasMinimumChars, shouldRenderResults]);
 
@@ -76,31 +81,37 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
 
-          <CommandList className="max-h-[300px] overflow-y-auto">
+          <CommandList className="max-h-[300px] overflow-y-auto bg-gray-50 border-t">
             {isLoading && (
               <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
             )}
 
-            {shouldRenderResults && (
+            {!isLoading && shouldRenderResults && (
               <CommandGroup heading="Results">
-                {results.map((result, idx) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}-${idx}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-2"
-                  >
-                    {result.type.toLowerCase() === "profile" ? (
-                      <User className="h-4 w-4 opacity-70" />
-                    ) : (
-                      <ListMusic className="h-4 w-4 opacity-70" />
-                    )}
-                    <span>{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">{result.type}</Badge>
-                  </CommandItem>
-                ))}
+                {safeResults.map((result, idx) => {
+                  console.log("🧩 Rendering result item:", result);
+                  return (
+                    <CommandItem
+                      key={`${result.type}-${result.id}-${idx}`}
+                      onSelect={() => handleSelect(result)}
+                      className="flex items-center gap-2"
+                    >
+                      {result.type.toLowerCase() === "profile" ? (
+                        <User className="h-4 w-4 opacity-70" />
+                      ) : (
+                        <ListMusic className="h-4 w-4 opacity-70" />
+                      )}
+                      <span>{result.title}</span>
+                      <Badge variant="outline" className="ml-auto">
+                        {result.type}
+                      </Badge>
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             )}
 
+            {/* This will show only if CommandGroup renders nothing */}
             <CommandEmpty>No results found.</CommandEmpty>
           </CommandList>
         </Command>
