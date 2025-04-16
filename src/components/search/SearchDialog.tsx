@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, User, ListMusic } from "lucide-react";
 import { useEffect } from "react";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +28,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  const shouldRenderResults = !isLoading && hasMinimumChars && results.length > 0;
+  const shouldRenderResults = hasMinimumChars && results.length > 0;
 
   useEffect(() => {
     console.log("SearchDialog state:", {
@@ -61,7 +62,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         onOpenChange(isOpen);
       }}
     >
-      <DialogContent className="z-50 max-w-md p-0 bg-white shadow-xl border rounded-md overflow-hidden">
+      <DialogContent className="max-w-md p-0 bg-white shadow-xl overflow-hidden">
         <DialogTitle className="sr-only">Search</DialogTitle>
         <Command>
           <div className="flex items-center border-b px-3 py-2">
@@ -88,6 +89,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     onSelect={() => handleSelect(result)}
                     className="flex items-center gap-2"
                   >
+                    {result.type.toLowerCase() === "profile" ? (
+                      <User className="h-4 w-4 opacity-70" />
+                    ) : (
+                      <ListMusic className="h-4 w-4 opacity-70" />
+                    )}
                     <span>{result.title}</span>
                     <Badge variant="outline" className="ml-auto">{result.type}</Badge>
                   </CommandItem>
@@ -95,7 +101,6 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </CommandGroup>
             )}
 
-            {/* Always render CommandEmpty so fallback works */}
             <CommandEmpty>No results found.</CommandEmpty>
           </CommandList>
         </Command>
