@@ -79,7 +79,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             )}
           
             {!isLoading && hasMinimumChars && results.length > 0 && (
-              <CommandGroup heading="Results">
+              {console.log("🧪 Render logic:", {
+              isLoading,
+              hasMinimumChars,
+              resultsCount: results.length,
+              shouldRender: !isLoading && hasMinimumChars && results.length > 0
+          })}<CommandGroup heading="Results">
                 {results.map((result, idx) => (
                   <CommandItem
                     key={`${result.type}-${result.id}-${idx}`}
