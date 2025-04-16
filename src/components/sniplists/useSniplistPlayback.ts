@@ -74,6 +74,8 @@ export const useSniplistPlayback = (sniplistId: string) => {
   const fetchSniplistItems = async () => {
     try {
       setLoading(true);
+      console.log("Fetching snippets for sniplist:", sniplistId);
+      
       const { data, error } = await supabase
         .from('sniplist_items')
         .select(`
@@ -85,18 +87,33 @@ export const useSniplistPlayback = (sniplistId: string) => {
             video_id,
             start_time,
             end_time,
-            comments
+            comments,
+            sniplist_id
           )
         `)
         .eq('sniplist_id', sniplistId)
         .order('position');
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching sniplist items:", error);
+        throw error;
+      }
+
+      console.log("Sniplist items data:", data);
 
       // Extract snippets from the response
       let extractedSnippets = data
-        .map(item => item.snippets as Snippet)
+        .map(item => {
+          const snippet = item.snippets as Snippet;
+          // Add sniplist_id to the snippet if not present
+          if (snippet && !snippet.sniplist_id) {
+            snippet.sniplist_id = sniplistId;
+          }
+          return snippet;
+        })
         .filter(Boolean);
+
+      console.log("Extracted snippets:", extractedSnippets);
 
       // Process snippets to enhance titles if needed
       const enhancedSnippets = await Promise.all(
@@ -128,7 +145,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       if (isMounted.current) {
         setSnippets(enhancedSnippets);
-        console.log("Fetched snippets:", enhancedSnippets);
+        console.log("Final enhanced snippets:", enhancedSnippets);
       }
     } catch (error: any) {
       console.error('Error fetching sniplist items:', error);

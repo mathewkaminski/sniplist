@@ -7,6 +7,7 @@ export interface Snippet {
   end_time: number;
   comments?: string;
   youtube_title?: string;
+  uploader?: string;
   sniplist_id?: string;
 }
 
