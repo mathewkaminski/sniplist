@@ -76,6 +76,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
       setLoading(true);
       console.log("Fetching snippets for sniplist:", sniplistId);
       
+      // Get the sniplist items with their associated snippets
       const { data, error } = await supabase
         .from('sniplist_items')
         .select(`
@@ -87,8 +88,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
             video_id,
             start_time,
             end_time,
-            comments,
-            sniplist_id
+            comments
           )
         `)
         .eq('sniplist_id', sniplistId)
@@ -101,17 +101,18 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       console.log("Sniplist items data:", data);
 
-      // Extract snippets from the response
+      // Extract snippets from the response and add the sniplist_id to each snippet
       let extractedSnippets = data
+        .filter(item => item.snippets && typeof item.snippets === 'object')
         .map(item => {
-          const snippet = item.snippets as Snippet;
-          // Add sniplist_id to the snippet if not present
-          if (snippet && !snippet.sniplist_id) {
-            snippet.sniplist_id = sniplistId;
-          }
+          // Make a copy of the snippet to avoid mutating the original
+          const snippet = { ...item.snippets } as Snippet;
+          
+          // Add sniplist_id to the snippet
+          snippet.sniplist_id = sniplistId;
+          
           return snippet;
-        })
-        .filter(Boolean);
+        });
 
       console.log("Extracted snippets:", extractedSnippets);
 
@@ -134,11 +135,15 @@ export const useSniplistPlayback = (sniplistId: string) => {
               // If it's a default title and we got a YouTube title, use that instead
               title: isDefaultTitle && videoData ? videoData.title : snippet.title,
               youtube_title: videoData?.title,
-              uploader: videoData?.uploader
+              uploader: videoData?.uploader,
+              sniplist_id: sniplistId // Ensure sniplist_id is preserved
             };
           } catch (err) {
             console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
-            return snippet;
+            return {
+              ...snippet,
+              sniplist_id: sniplistId // Ensure sniplist_id is preserved
+            };
           }
         })
       );
