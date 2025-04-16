@@ -1,56 +1,17 @@
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
-import { useSearch } from "@/hooks/useSearch";
-import { useNavigate } from "react-router-dom";
-import { SearchIcon, Users, ListMusic } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { useEffect } from "react";
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog"; // Make sure this is correctly implemented via shadcn
 
-interface SearchDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
-  const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log("SearchDialog state:", {
-      searchTerm,
-      resultsCount: results?.length || 0,
-      isLoading,
-      hasMinimumChars,
-      results,
-    });
-  }, [searchTerm, results, isLoading, hasMinimumChars]);
-
-  const handleSelect = (result: { type: string; id: string }) => {
-    onOpenChange(false);
-    setSearchTerm("");
-
-    if (result.type.toLowerCase() === "profile") {
-      navigate(`/profile/${result.id}`);
-      toast.success("Viewing profile");
-    } else {
-      navigate(`/sniplists?play=${result.id}`);
-      toast.success("Playing sniplist");
-    }
-  };
-
+export function SearchDialog({ open, onOpenChange }) {
   return (
-    <DialogContent className="z-50 bg-white p-6 border">
-      <h1 className="text-xl font-bold text-black">✅ Dialog works</h1>
-    </DialogContent>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-white border p-6 shadow-md z-50 max-w-md">
+        <DialogTitle className="text-lg font-bold text-black">Dialog Working ✅</DialogTitle>
+        <p className="text-black mt-2">If you see this, your Dialog is now wired up properly.</p>
+      </DialogContent>
+    </Dialog>
   );
 }
