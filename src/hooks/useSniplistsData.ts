@@ -96,22 +96,37 @@ export function useSniplistsData(userId?: string) {
         fetchUserSniplists(authData.user.id);
       } else {
         // For non-authenticated users, fetch public sniplists
-        const { data, error } = await supabase
+        // First, get all profiles that are public
+        const { data: publicProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('is_public', true);
+          
+        if (profilesError) {
+          throw profilesError;
+        }
+        
+        if (!publicProfiles || publicProfiles.length === 0) {
+          setSniplists([]);
+          setNoSniplists(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Then get sniplists from those public profiles
+        const publicUserIds = publicProfiles.map(profile => profile.id);
+        const { data: publicSniplists, error: sniplistsError } = await supabase
           .from('sniplists')
-          .select(`
-            *,
-            profiles:user_id(is_public)
-          `)
-          .eq('profiles.is_public', true)
+          .select('*')
+          .in('user_id', publicUserIds)
           .order('created_at', { ascending: false });
+          
+        if (sniplistsError) {
+          throw sniplistsError;
+        }
         
-        if (error) throw error;
-        
-        // Filter out any sniplists where profile is not public (extra safety)
-        const publicSniplists = data?.filter(list => list.profiles?.is_public) || [];
-        
-        setSniplists(publicSniplists);
-        setNoSniplists(publicSniplists.length === 0);
+        setSniplists(publicSniplists || []);
+        setNoSniplists(!publicSniplists || publicSniplists.length === 0);
         setLoading(false);
       }
     } catch (error: any) {

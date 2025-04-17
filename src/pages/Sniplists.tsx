@@ -3,8 +3,7 @@ import { useParams } from "react-router-dom";
 import { useSniplistsData } from "@/hooks/useSniplistsData";
 import { SniplistsList } from "@/components/sniplists/SniplistsList";
 import { Header } from "@/components/Header";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { SniplistsStatus } from "@/components/sniplists/SniplistsStatus";
 
 export default function Sniplists() {
   const { userId } = useParams<{ userId: string }>();
@@ -31,22 +30,15 @@ export default function Sniplists() {
             {isCurrentUser ? "My Sniplists" : username ? `${username}'s Sniplists` : "Sniplists"}
           </h1>
 
-          {isPrivate ? (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Private Profile</AlertTitle>
-              <AlertDescription>
-                This user's profile is private. You cannot view their sniplists.
-              </AlertDescription>
-            </Alert>
-          ) : noSniplists ? (
-            <Alert className="mb-4">
-              <AlertTitle>No Sniplists Found</AlertTitle>
-              <AlertDescription>
-                {username || "This user"} hasn't created any sniplists yet.
-              </AlertDescription>
-            </Alert>
-          ) : (
+          <SniplistsStatus 
+            isPrivate={isPrivate}
+            noSniplists={noSniplists}
+            loading={loading}
+            username={username}
+            isCurrentUser={isCurrentUser}
+          />
+
+          {!isPrivate && (
             <SniplistsList
               sniplists={sniplists}
               loading={loading}

@@ -32,14 +32,10 @@ export const useSniplistPlayback = (sniplistId: string) => {
       setLoading(true);
       console.log("🎵 Fetching snippets for sniplist:", sniplistId);
       
-      // First, verify sniplist exists and is accessible
+      // First, verify sniplist exists and get owner's user_id
       const { data: sniplistData, error: sniplistError } = await supabase
         .from('sniplists')
-        .select(`
-          title, 
-          user_id,
-          profiles:user_id (is_public)
-        `)
+        .select('user_id, title')
         .eq('id', sniplistId)
         .single();
 
@@ -52,11 +48,26 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       console.log("✅ Sniplist found:", sniplistData);
       
-      // Check if current user is the owner or if the sniplist owner's profile is public
+      // Check if the sniplist owner's profile is public
+      const { data: ownerProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_public')
+        .eq('id', sniplistData.user_id)
+        .single();
+        
+      if (profileError) {
+        console.error("❌ Error fetching profile:", profileError);
+        toast.error("Failed to verify access to sniplist");
+        setLoading(false);
+        return;
+      }
+      
+      // Check if current user is the owner
       const { data: authData } = await supabase.auth.getUser();
       const isOwner = authData.user && authData.user.id === sniplistData.user_id;
-      const isPublic = sniplistData.profiles?.is_public;
+      const isPublic = ownerProfile?.is_public === true;
       
+      // Only allow access if owner or public profile
       if (!isOwner && !isPublic) {
         console.log("❌ Access denied: sniplist is private and user is not owner");
         toast.error("This sniplist is private");
