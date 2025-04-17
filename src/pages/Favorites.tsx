@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Header } from "@/components/Header";
 import { SniplistsList } from "@/components/sniplists/SniplistsList";
@@ -11,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { fetchVideoData } from "@/utils/youtube";
 
 export default function Favorites() {
   const navigate = useNavigate();
@@ -51,7 +51,29 @@ export default function Favorites() {
       if (snippetsData.error) throw snippetsData.error;
       if (sniplistsData.error) throw sniplistsData.error;
 
-      setSnippets(snippetsData.data || []);
+      const snippetsWithData = await Promise.all(
+        (snippetsData.data || []).map(async (snippet) => {
+          try {
+            const videoData = await fetchVideoData(snippet.video_id);
+            
+            const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+            
+            return {
+              ...snippet,
+              title: isDefaultTitle && videoData.title ? videoData.title : snippet.title,
+              uploader: videoData.uploader
+            };
+          } catch (err) {
+            console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
+            return {
+              ...snippet,
+              uploader: 'Unknown'
+            };
+          }
+        })
+      );
+
+      setSnippets(snippetsWithData);
       setSniplists(sniplistsData.data || []);
     } catch (error: any) {
       console.error('Error fetching favorites:', error);
