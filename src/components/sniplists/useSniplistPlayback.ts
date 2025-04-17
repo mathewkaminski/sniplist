@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,17 +35,34 @@ export const useSniplistPlayback = (sniplistId: string) => {
       // First, verify sniplist exists and is accessible
       const { data: sniplistData, error: sniplistError } = await supabase
         .from('sniplists')
-        .select('title')
+        .select(`
+          title, 
+          user_id,
+          profiles:user_id (is_public)
+        `)
         .eq('id', sniplistId)
         .single();
 
       if (sniplistError) {
         console.error("❌ Error fetching sniplist:", sniplistError);
         toast.error("Failed to access sniplist");
+        setLoading(false);
         return;
       }
 
       console.log("✅ Sniplist found:", sniplistData);
+      
+      // Check if current user is the owner or if the sniplist owner's profile is public
+      const { data: authData } = await supabase.auth.getUser();
+      const isOwner = authData.user && authData.user.id === sniplistData.user_id;
+      const isPublic = sniplistData.profiles?.is_public;
+      
+      if (!isOwner && !isPublic) {
+        console.log("❌ Access denied: sniplist is private and user is not owner");
+        toast.error("This sniplist is private");
+        setLoading(false);
+        return;
+      }
       
       const { data: sniplistItemsData, error: sniplistItemsError } = await supabase
         .from('sniplist_items')
@@ -55,6 +73,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
       if (sniplistItemsError) {
         console.error("❌ Error fetching sniplist items:", sniplistItemsError);
         toast.error(`Failed to load sniplist items: ${sniplistItemsError.message}`);
+        setLoading(false);
         return;
       }
 
@@ -78,6 +97,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
       if (snippetsError) {
         console.error("❌ Error fetching snippets:", snippetsError);
         toast.error(`Failed to load snippets: ${snippetsError.message}`);
+        setLoading(false);
         return;
       }
 
@@ -106,41 +126,49 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       console.log("Ordered snippets:", orderedSnippets.length);
 
-      const enhancedSnippets = await Promise.all(
-        orderedSnippets.map(async (snippet) => {
-          if (!snippet) return null;
-          
-          const isDefaultTitle = snippet.title && snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
-          
-          try {
-            let videoData = null;
+      try {
+        const enhancedSnippets = await Promise.all(
+          orderedSnippets.map(async (snippet) => {
+            if (!snippet) return null;
             
-            if (isDefaultTitle) {
-              videoData = await fetchVideoData(snippet.video_id);
+            const isDefaultTitle = snippet.title && snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+            
+            try {
+              let videoData = null;
+              
+              if (isDefaultTitle) {
+                videoData = await fetchVideoData(snippet.video_id);
+              }
+              
+              return {
+                ...snippet,
+                title: isDefaultTitle && videoData ? videoData.title : snippet.title,
+                youtube_title: videoData?.title,
+                uploader: videoData?.uploader,
+                sniplist_id: sniplistId
+              };
+            } catch (err) {
+              console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
+              return {
+                ...snippet,
+                sniplist_id: sniplistId
+              };
             }
-            
-            return {
-              ...snippet,
-              title: isDefaultTitle && videoData ? videoData.title : snippet.title,
-              youtube_title: videoData?.title,
-              uploader: videoData?.uploader,
-              sniplist_id: sniplistId
-            };
-          } catch (err) {
-            console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
-            return {
-              ...snippet,
-              sniplist_id: sniplistId
-            };
-          }
-        })
-      );
+          })
+        );
 
-      const finalSnippets = enhancedSnippets.filter(Boolean) as Snippet[];
+        const finalSnippets = enhancedSnippets.filter(Boolean) as Snippet[];
 
-      if (isMounted.current) {
-        setSnippets(finalSnippets);
-        console.log("Final enhanced snippets:", finalSnippets.length);
+        if (isMounted.current) {
+          setSnippets(finalSnippets);
+          console.log("Final enhanced snippets:", finalSnippets.length);
+        }
+      } catch (error) {
+        console.error("Error enhancing snippets with YouTube data:", error);
+        // Continue with basic snippet data if enhancement fails
+        if (isMounted.current) {
+          setSnippets(orderedSnippets);
+        }
       }
     } catch (error: any) {
       console.error('❌ Error in fetchSniplistItems:', error);
@@ -210,8 +238,8 @@ export const useSniplistPlayback = (sniplistId: string) => {
     currentSnippetIndex,
     playlistComplete,
     setCurrentSnippetIndex,
-    handleSnippetEnd: () => {},
-    handleRestartPlaylist: () => {},
+    handleSnippetEnd,
+    handleRestartPlaylist,
     setPlaylistComplete,
   };
 };
