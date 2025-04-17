@@ -29,9 +29,23 @@ export const useSniplistPlayback = (sniplistId: string) => {
   const fetchSniplistItems = async () => {
     try {
       setLoading(true);
-      console.log("Fetching snippets for sniplist:", sniplistId);
+      console.log("🎵 Fetching snippets for sniplist:", sniplistId);
       
-      // First, get all snippet_ids from the sniplist_items table
+      // First, verify sniplist exists and is accessible
+      const { data: sniplistData, error: sniplistError } = await supabase
+        .from('sniplists')
+        .select('title')
+        .eq('id', sniplistId)
+        .single();
+
+      if (sniplistError) {
+        console.error("❌ Error fetching sniplist:", sniplistError);
+        toast.error("Failed to access sniplist");
+        return;
+      }
+
+      console.log("✅ Sniplist found:", sniplistData);
+      
       const { data: sniplistItemsData, error: sniplistItemsError } = await supabase
         .from('sniplist_items')
         .select('snippet_id, position')
@@ -39,37 +53,35 @@ export const useSniplistPlayback = (sniplistId: string) => {
         .order('position');
 
       if (sniplistItemsError) {
-        console.error("Error fetching sniplist items:", sniplistItemsError);
+        console.error("❌ Error fetching sniplist items:", sniplistItemsError);
         toast.error(`Failed to load sniplist items: ${sniplistItemsError.message}`);
         return;
       }
 
-      console.log("Sniplist items found:", sniplistItemsData?.length || 0);
+      console.log("✅ Sniplist items found:", sniplistItemsData?.length || 0);
       
       if (!sniplistItemsData || sniplistItemsData.length === 0) {
-        console.log("No items found in sniplist:", sniplistId);
+        console.log("ℹ️ No items found in sniplist:", sniplistId);
         setSnippets([]);
         setLoading(false);
         toast.info("This sniplist has no snippets");
         return;
       }
 
-      // Extract snippet_ids
       const snippetIds = sniplistItemsData.map(item => item.snippet_id);
       
-      // Then fetch the actual snippets data using those IDs
       const { data: snippetsData, error: snippetsError } = await supabase
         .from('snippets')
         .select('*')
         .in('id', snippetIds);
 
       if (snippetsError) {
-        console.error("Error fetching snippets:", snippetsError);
+        console.error("❌ Error fetching snippets:", snippetsError);
         toast.error(`Failed to load snippets: ${snippetsError.message}`);
         return;
       }
 
-      console.log("Fetched snippets data:", snippetsData?.length || 0);
+      console.log("✅ Fetched snippets data:", snippetsData?.length || 0);
 
       if (!snippetsData || snippetsData.length === 0) {
         console.log("No snippets found for the given IDs");
@@ -79,14 +91,13 @@ export const useSniplistPlayback = (sniplistId: string) => {
         return;
       }
 
-      // Map snippets to maintain the order from sniplist_items
       const orderedSnippets = sniplistItemsData
         .map(item => {
           const snippet = snippetsData.find(s => s.id === item.snippet_id);
           if (snippet) {
             return {
               ...snippet,
-              sniplist_id: sniplistId // Add sniplist_id to each snippet
+              sniplist_id: sniplistId
             };
           }
           return null;
@@ -95,10 +106,8 @@ export const useSniplistPlayback = (sniplistId: string) => {
 
       console.log("Ordered snippets:", orderedSnippets.length);
 
-      // Process snippets to enhance titles if needed
       const enhancedSnippets = await Promise.all(
         orderedSnippets.map(async (snippet) => {
-          // Check if the title is the default format that uses timestamps
           if (!snippet) return null;
           
           const isDefaultTitle = snippet.title && snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
@@ -106,30 +115,27 @@ export const useSniplistPlayback = (sniplistId: string) => {
           try {
             let videoData = null;
             
-            // Only fetch YouTube data if the current title is the default one
             if (isDefaultTitle) {
               videoData = await fetchVideoData(snippet.video_id);
             }
             
             return {
               ...snippet,
-              // If it's a default title and we got a YouTube title, use that instead
               title: isDefaultTitle && videoData ? videoData.title : snippet.title,
               youtube_title: videoData?.title,
               uploader: videoData?.uploader,
-              sniplist_id: sniplistId // Ensure sniplist_id is preserved
+              sniplist_id: sniplistId
             };
           } catch (err) {
             console.error(`Failed to fetch data for ${snippet.video_id}:`, err);
             return {
               ...snippet,
-              sniplist_id: sniplistId // Ensure sniplist_id is preserved
+              sniplist_id: sniplistId
             };
           }
         })
       );
 
-      // Filter out any null values that might have snuck in
       const finalSnippets = enhancedSnippets.filter(Boolean) as Snippet[];
 
       if (isMounted.current) {
@@ -137,8 +143,8 @@ export const useSniplistPlayback = (sniplistId: string) => {
         console.log("Final enhanced snippets:", finalSnippets.length);
       }
     } catch (error: any) {
-      console.error('Error fetching sniplist items:', error);
-      toast.error(`Failed to load sniplist items: ${error.message}`);
+      console.error('❌ Error in fetchSniplistItems:', error);
+      toast.error(`Failed to load sniplist: ${error.message}`);
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -154,13 +160,11 @@ export const useSniplistPlayback = (sniplistId: string) => {
   }, [currentSnippetIndex, snippets.length]);
 
   useEffect(() => {
-    // Clear previous timer when changing snippets or when playlist completes
     if (snippetTimer.current) {
       clearTimeout(snippetTimer.current);
       snippetTimer.current = null;
     }
 
-    // Only set a new timer if the playlist isn't complete
     if (!playlistComplete && snippets.length > 0) {
       console.log(`Setting timer for snippet ${currentSnippetIndex + 1} of ${snippets.length}`);
       

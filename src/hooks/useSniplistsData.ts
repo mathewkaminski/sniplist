@@ -30,14 +30,12 @@ export function useSniplistsData(userId?: string) {
   }, [userId]);
 
   const checkUserAccess = async (userId: string) => {
-    console.log("🧪 Inside checkUserAccess for:", userId);
+    console.log("🔍 Checking access for user:", userId);
     try {
       const { data: authData } = await supabase.auth.getUser();
-      console.log('Auth data:', authData);
-      
       const isCurrentUser = authData.user?.id === userId;
       setIsCurrentUser(isCurrentUser);
-      console.log('Is current user:', isCurrentUser);
+      console.log('Auth check - Is current user:', isCurrentUser);
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -55,15 +53,14 @@ export function useSniplistsData(userId?: string) {
       if (profileData) {
         setUsername(profileData.username || 'User');
         
-        if (!isCurrentUser && profileData.is_public === false) {
+        if (isCurrentUser || profileData.is_public) {
+          console.log('Access granted, fetching sniplists');
+          fetchUserSniplists(userId);
+        } else {
           console.log('Profile is private, blocking access');
           setIsPrivate(true);
-          setLoading(false);
-          return;
         }
-        
-        console.log('Access granted, fetching sniplists');
-        fetchUserSniplists(userId);
+        setLoading(false);
       } else {
         console.log('No profile found for user:', userId);
         setLoading(false);
@@ -114,19 +111,14 @@ export function useSniplistsData(userId?: string) {
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
-      console.log(`Sniplists query for user ${userId}:`, data, error);
-      
       if (error) throw error;
-      setSniplists(data || []);
       
-      if (!data || data.length === 0) {
-        setNoSniplists(true);
-      } else {
-        setNoSniplists(false);
-      }
+      console.log(`Found ${data?.length || 0} sniplists for user ${userId}`);
+      setSniplists(data || []);
+      setNoSniplists(!data || data.length === 0);
     } catch (error: any) {
       console.error('Error fetching user sniplists:', error);
-      toast.error(`Failed to load user sniplists: ${error.message}`);
+      toast.error(`Failed to load sniplists: ${error.message}`);
     } finally {
       setLoading(false);
     }
