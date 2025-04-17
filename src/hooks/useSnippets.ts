@@ -23,9 +23,17 @@ export function useSnippets() {
   const fetchSnippets = async () => {
     try {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setSnippets([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('snippets')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -35,12 +43,10 @@ export function useSnippets() {
           try {
             const videoData = await fetchVideoData(snippet.video_id);
             
-            // Check if the title is the default format that uses timestamps
             const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
             
             return {
               ...snippet,
-              // If it's a default title and we got a YouTube title, use that instead
               title: isDefaultTitle && videoData.title ? videoData.title : snippet.title,
               uploader: videoData.uploader
             };

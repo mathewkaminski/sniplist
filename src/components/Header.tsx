@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
@@ -6,31 +5,29 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { SearchDialog } from "./search/SearchDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function Header() {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const { user } = useCurrentUser();
 
   const handleHomeClick = () => {
     navigate("/");
   };
 
   const handleMySniplists = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      navigate(`/user/${data.user.id}/sniplists`);
+    if (user) {
+      navigate(`/user/${user.id}/sniplists`);
     } else {
-      // Instead of redirecting to auth, just navigate to public sniplists
       navigate("/");
     }
   };
 
   const handleMySnippets = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) {
-      navigate("/my-list");
+    if (user) {
+      navigate("/snippets");
     } else {
-      // Instead of redirecting to auth, just navigate to home
       navigate("/");
     }
   };

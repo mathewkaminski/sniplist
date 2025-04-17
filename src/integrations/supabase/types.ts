@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      favorite_sniplists: {
+        Row: {
+          created_at: string
+          id: string
+          sniplist_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sniplist_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sniplist_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_sniplists_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
+            referencedRelation: "sniplist_stats"
+            referencedColumns: ["sniplist_id"]
+          },
+          {
+            foreignKeyName: "favorite_sniplists_sniplist_id_fkey"
+            columns: ["sniplist_id"]
+            isOneToOne: false
+            referencedRelation: "sniplists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorite_snippets: {
+        Row: {
+          created_at: string
+          id: string
+          snippet_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          snippet_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          snippet_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_snippets_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
