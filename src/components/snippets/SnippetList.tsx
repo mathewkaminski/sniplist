@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash, CheckCircle, ExternalLink } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Snippet } from "./types";
 import { formatTimeDisplay } from "@/utils/timeFormat";
 import { getYoutubeVideoUrl } from "@/utils/youtube";
@@ -79,6 +80,10 @@ export function SnippetList({
             <TableCell>{formatTimeDisplay(snippet.end_time)}</TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
+                <FavoriteButton 
+                  type="snippet" 
+                  id={snippet.id} 
+                />
                 <Button
                   variant="outline"
                   size="icon"
