@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import UserSnippets from "./pages/UserSnippets";
 import Sniplists from "./pages/Sniplists";
 import ContactUs from "./pages/ContactUs";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +33,7 @@ const App = () => (
           <Route path="/user/:userId/sniplists" element={<Sniplists />} />
           <Route path="/user/:userId/snippets" element={<UserSnippets />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

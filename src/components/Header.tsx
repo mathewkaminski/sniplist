@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search } from "lucide-react";
+import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search, Heart } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { SearchDialog } from "./search/SearchDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function Header() {
@@ -57,6 +56,15 @@ export function Header() {
           >
             <FileText className="h-6 w-6 text-black" />
           </Button>
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/favorites')}
+            >
+              <Heart className="h-6 w-6 text-black" />
+            </Button>
+          )}
         </div>
         <Button 
           variant="ghost" 

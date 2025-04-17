@@ -3,6 +3,7 @@ import { formatDistance } from "date-fns";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Share, Trash2, Pencil, Play } from "lucide-react";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import {
   Dialog,
   DialogContent,
@@ -62,9 +63,7 @@ export function SniplistCard({ id, title, created_at, onDelete, onPlay }: Snipli
 
   return (
     <>
-      <div 
-        className="p-4 border rounded-lg hover:border-gray-400 transition-colors"
-      >
+      <div className="p-4 border rounded-lg hover:border-gray-400 transition-colors">
         <div className="flex justify-between items-start">
           <div 
             className="flex-grow cursor-pointer"
@@ -83,6 +82,7 @@ export function SniplistCard({ id, title, created_at, onDelete, onPlay }: Snipli
             >
               <Play className="h-4 w-4 text-green-600" />
             </Button>
+            <FavoriteButton type="sniplist" id={id} />
             {onDelete && (
               <>
                 <Button
