@@ -14,9 +14,17 @@ export function useFavorites() {
 
   const fetchFavorites = async () => {
     try {
+      // First, get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       const [snippetsResponse, sniplistsResponse] = await Promise.all([
-        supabase.from('favorite_snippets').select('snippet_id'),
-        supabase.from('favorite_sniplists').select('sniplist_id')
+        supabase.from('favorite_snippets').select('snippet_id').eq('user_id', user.id),
+        supabase.from('favorite_sniplists').select('sniplist_id').eq('user_id', user.id)
       ]);
 
       if (snippetsResponse.error) throw snippetsResponse.error;
@@ -36,10 +44,19 @@ export function useFavorites() {
     const isFavorited = favoriteSnippets.includes(snippetId);
     
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('You need to be logged in to favorite snippets');
+        return;
+      }
+      
       if (isFavorited) {
         const { error } = await supabase
           .from('favorite_snippets')
           .delete()
+          .eq('user_id', user.id)
           .eq('snippet_id', snippetId);
         
         if (error) throw error;
@@ -48,7 +65,10 @@ export function useFavorites() {
       } else {
         const { error } = await supabase
           .from('favorite_snippets')
-          .insert({ snippet_id: snippetId });
+          .insert({ 
+            user_id: user.id,
+            snippet_id: snippetId 
+          });
         
         if (error) throw error;
         setFavoriteSnippets(prev => [...prev, snippetId]);
@@ -64,10 +84,19 @@ export function useFavorites() {
     const isFavorited = favoriteSniplists.includes(sniplistId);
     
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('You need to be logged in to favorite sniplists');
+        return;
+      }
+      
       if (isFavorited) {
         const { error } = await supabase
           .from('favorite_sniplists')
           .delete()
+          .eq('user_id', user.id)
           .eq('sniplist_id', sniplistId);
         
         if (error) throw error;
@@ -76,7 +105,10 @@ export function useFavorites() {
       } else {
         const { error } = await supabase
           .from('favorite_sniplists')
-          .insert({ sniplist_id: sniplistId });
+          .insert({ 
+            user_id: user.id,
+            sniplist_id: sniplistId 
+          });
         
         if (error) throw error;
         setFavoriteSniplists(prev => [...prev, sniplistId]);
