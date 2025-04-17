@@ -12,7 +12,14 @@ import MyList from "./pages/MyList";
 import Sniplists from "./pages/Sniplists";
 import ContactUs from "./pages/ContactUs";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

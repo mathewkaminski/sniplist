@@ -20,7 +20,8 @@ export function Header() {
     if (data.user) {
       navigate(`/user/${data.user.id}/sniplists`);
     } else {
-      navigate("/auth");
+      // Instead of redirecting to auth, just navigate to public sniplists
+      navigate("/");
     }
   };
 
@@ -29,7 +30,8 @@ export function Header() {
     if (data.user) {
       navigate("/my-list");
     } else {
-      navigate("/auth");
+      // Instead of redirecting to auth, just navigate to home
+      navigate("/");
     }
   };
 

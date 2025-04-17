@@ -95,7 +95,7 @@ export const useSniplistPlayback = (sniplistId: string) => {
         return;
       }
 
-      console.log("Sniplist items found:", sniplistItemsData);
+      console.log("Sniplist items found:", sniplistItemsData.length);
       
       // Extract snippet_ids
       const snippetIds = sniplistItemsData.map(item => item.snippet_id);
@@ -111,7 +111,14 @@ export const useSniplistPlayback = (sniplistId: string) => {
         throw snippetsError;
       }
 
-      console.log("Fetched snippets data:", snippetsData);
+      if (!snippetsData || snippetsData.length === 0) {
+        console.log("No snippets found for the given IDs");
+        setSnippets([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log("Fetched snippets data:", snippetsData.length);
 
       // Map snippets to maintain the order from sniplist_items
       const orderedSnippets = sniplistItemsData
@@ -127,13 +134,15 @@ export const useSniplistPlayback = (sniplistId: string) => {
         })
         .filter(Boolean) as Snippet[];
 
-      console.log("Ordered snippets:", orderedSnippets);
+      console.log("Ordered snippets:", orderedSnippets.length);
 
       // Process snippets to enhance titles if needed
       const enhancedSnippets = await Promise.all(
         orderedSnippets.map(async (snippet) => {
           // Check if the title is the default format that uses timestamps
-          const isDefaultTitle = snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
+          if (!snippet) return null;
+          
+          const isDefaultTitle = snippet.title && snippet.title.includes(`Snippet ${Math.floor(snippet.start_time)}s - ${Math.floor(snippet.end_time)}s`);
           
           try {
             let videoData = null;
@@ -161,9 +170,12 @@ export const useSniplistPlayback = (sniplistId: string) => {
         })
       );
 
+      // Filter out any null values that might have snuck in
+      const finalSnippets = enhancedSnippets.filter(Boolean) as Snippet[];
+
       if (isMounted.current) {
-        setSnippets(enhancedSnippets);
-        console.log("Final enhanced snippets:", enhancedSnippets);
+        setSnippets(finalSnippets);
+        console.log("Final enhanced snippets:", finalSnippets.length);
       }
     } catch (error: any) {
       console.error('Error fetching sniplist items:', error);
