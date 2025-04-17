@@ -10,35 +10,42 @@ import { Snippet } from "@/components/snippets/types";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function Favorites() {
   const navigate = useNavigate();
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const { favoriteSnippets, favoriteSniplists } = useFavorites();
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [sniplists, setSniplists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (userLoading) return;
+    
     if (!user) {
       navigate("/auth");
       return;
     }
+    
     fetchFavorites();
-  }, [user, favoriteSnippets, favoriteSniplists]);
+  }, [user, userLoading, favoriteSnippets, favoriteSniplists]);
 
   const fetchFavorites = async () => {
+    if (!favoriteSnippets.length && !favoriteSniplists.length) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const [snippetsData, sniplistsData] = await Promise.all([
-        supabase
-          .from('snippets')
-          .select('*')
-          .in('id', favoriteSnippets),
-        supabase
-          .from('sniplists')
-          .select('*')
-          .in('id', favoriteSniplists)
+        favoriteSnippets.length > 0 
+          ? supabase.from('snippets').select('*').in('id', favoriteSnippets)
+          : Promise.resolve({ data: [], error: null }),
+        favoriteSniplists.length > 0
+          ? supabase.from('sniplists').select('*').in('id', favoriteSniplists)
+          : Promise.resolve({ data: [], error: null })
       ]);
 
       if (snippetsData.error) throw snippetsData.error;
@@ -53,6 +60,17 @@ export default function Favorites() {
       setLoading(false);
     }
   };
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -73,9 +91,11 @@ export default function Favorites() {
 
             <TabsContent value="snippets">
               {loading ? (
-                <p>Loading snippets...</p>
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
               ) : snippets.length === 0 ? (
-                <p className="text-gray-500">No favorite snippets yet.</p>
+                <p className="text-gray-500 text-center py-8">No favorite snippets yet.</p>
               ) : (
                 <SnippetList 
                   snippets={snippets}
@@ -87,9 +107,11 @@ export default function Favorites() {
 
             <TabsContent value="sniplists">
               {loading ? (
-                <p>Loading sniplists...</p>
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
               ) : sniplists.length === 0 ? (
-                <p className="text-gray-500">No favorite sniplists yet.</p>
+                <p className="text-gray-500 text-center py-8">No favorite sniplists yet.</p>
               ) : (
                 <SniplistsList
                   sniplists={sniplists}

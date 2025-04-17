@@ -61,6 +61,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               onClick={() => navigate('/favorites')}
+              title="My Favorites"
             >
               <Heart className="h-6 w-6 text-black" />
             </Button>

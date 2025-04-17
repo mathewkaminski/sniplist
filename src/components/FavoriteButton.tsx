@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FavoriteButtonProps {
   type: "snippet" | "sniplist";
@@ -12,6 +14,7 @@ interface FavoriteButtonProps {
 
 export function FavoriteButton({ type, id, className = "" }: FavoriteButtonProps) {
   const { user } = useCurrentUser();
+  const [isCreator, setIsCreator] = useState(false);
   const { 
     favoriteSnippets, 
     favoriteSniplists, 
@@ -23,6 +26,24 @@ export function FavoriteButton({ type, id, className = "" }: FavoriteButtonProps
     ? favoriteSnippets.includes(id)
     : favoriteSniplists.includes(id);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const checkCreator = async () => {
+      const { data, error } = await supabase
+        .from(type === "snippet" ? "snippets" : "sniplists")
+        .select("user_id")
+        .eq("id", id)
+        .single();
+
+      if (!error && data) {
+        setIsCreator(data.user_id === user.id);
+      }
+    };
+
+    checkCreator();
+  }, [id, type, user]);
+
   const handleToggle = async () => {
     if (type === "snippet") {
       await toggleFavoriteSnippet(id);
@@ -31,7 +52,7 @@ export function FavoriteButton({ type, id, className = "" }: FavoriteButtonProps
     }
   };
 
-  if (!user) return null;
+  if (!user || isCreator) return null;
 
   return (
     <Button
