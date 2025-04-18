@@ -16,7 +16,7 @@ export function useSearch() {
 
   const trimmedTerm = searchTerm.trim();
 
-  const { data = [], isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["search", trimmedTerm],
     queryFn: async () => {
       if (trimmedTerm.length < MIN_SEARCH_LENGTH) return [];

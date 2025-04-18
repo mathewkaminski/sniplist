@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { SearchIcon, User, ListMusic, Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { useSearch } from "@/hooks/useSearch";
+import { useSearch, SearchResult } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -28,12 +28,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Safe results: ensures valid data only
-  const safeResults = Array.isArray(results)
-    ? results.filter(r => r?.title && r?.id && r?.type)
-    : [];
-
-  const shouldRenderResults = hasMinimumChars && safeResults.length > 0;
+  // Don't use a derived variable here - directly check the conditions when rendering
+  const validResults = Array.isArray(results) ? results : [];
 
   useEffect(() => {
     console.log("SearchDialog state:", {
@@ -41,13 +37,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       resultsCount: results?.length || 0,
       isLoading,
       hasMinimumChars,
-      shouldRenderResults,
-      results,
-      safeResults,
+      shouldRenderResults: hasMinimumChars && validResults.length > 0,
+      validResults,
     });
-  }, [searchTerm, results, isLoading, hasMinimumChars, shouldRenderResults]);
+  }, [searchTerm, results, isLoading, hasMinimumChars, validResults]);
 
-  const handleSelect = (result: { type: string; id: string }) => {
+  const handleSelect = (result: SearchResult) => {
+    console.log("Selected result:", result);
     onOpenChange(false);
     setSearchTerm("");
 
@@ -90,34 +86,31 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </div>
             )}
 
-            {!isLoading && hasMinimumChars && safeResults.length === 0 && (
+            {!isLoading && hasMinimumChars && validResults.length === 0 && (
               <div className="p-4 text-sm text-muted-foreground text-center">
                 No results found
               </div>
             )}
 
-            {!isLoading && shouldRenderResults && (
+            {!isLoading && hasMinimumChars && validResults.length > 0 && (
               <CommandGroup heading="Results">
-                {safeResults.map((result, idx) => {
-                  console.log("🧩 Rendering result item:", result);
-                  return (
-                    <CommandItem
-                      key={`${result.type}-${result.id}-${idx}`}
-                      onSelect={() => handleSelect(result)}
-                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
-                    >
-                      {result.type.toLowerCase() === "profile" ? (
-                        <User className="h-4 w-4 opacity-70" />
-                      ) : (
-                        <ListMusic className="h-4 w-4 opacity-70" />
-                      )}
-                      <span className="flex-1 truncate">{result.title}</span>
-                      <Badge variant="outline" className="ml-auto">
-                        {result.type}
-                      </Badge>
-                    </CommandItem>
-                  );
-                })}
+                {validResults.map((result, idx) => (
+                  <CommandItem
+                    key={`${result.type}-${result.id}-${idx}`}
+                    onSelect={() => handleSelect(result)}
+                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
+                  >
+                    {result.type.toLowerCase() === "profile" ? (
+                      <User className="h-4 w-4 opacity-70" />
+                    ) : (
+                      <ListMusic className="h-4 w-4 opacity-70" />
+                    )}
+                    <span className="flex-1 truncate">{result.title}</span>
+                    <Badge variant="outline" className="ml-auto">
+                      {result.type}
+                    </Badge>
+                  </CommandItem>
+                ))}
               </CommandGroup>
             )}
 
