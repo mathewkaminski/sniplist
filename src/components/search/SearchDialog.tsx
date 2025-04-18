@@ -28,22 +28,25 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  // Don't use a derived variable here - directly check the conditions when rendering
-  const validResults = Array.isArray(results) ? results : [];
+  const safeResults: SearchResult[] = results.filter(
+    (r): r is SearchResult => !!r?.title && !!r?.id && !!r?.type
+  );
+
+  const shouldRenderResults = hasMinimumChars && safeResults.length > 0;
 
   useEffect(() => {
-    console.log("SearchDialog state:", {
+    console.log("🔍 SearchDialog state:", {
       searchTerm,
       resultsCount: results?.length || 0,
       isLoading,
       hasMinimumChars,
-      shouldRenderResults: hasMinimumChars && validResults.length > 0,
-      validResults,
+      shouldRenderResults,
+      results,
+      safeResults,
     });
-  }, [searchTerm, results, isLoading, hasMinimumChars, validResults]);
+  }, [searchTerm, results, isLoading, hasMinimumChars, shouldRenderResults]);
 
   const handleSelect = (result: SearchResult) => {
-    console.log("Selected result:", result);
     onOpenChange(false);
     setSearchTerm("");
 
@@ -72,7 +75,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             <CommandInput
               placeholder="Search sniplists and users..."
               value={searchTerm}
-              onValueChange={setSearchTerm}
+              onValueChange={(value) => {
+                console.log("📝 Input changed:", value);
+                setSearchTerm(value);
+              }}
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
               autoFocus
             />
@@ -86,15 +92,15 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </div>
             )}
 
-            {!isLoading && hasMinimumChars && validResults.length === 0 && (
+            {!isLoading && hasMinimumChars && safeResults.length === 0 && (
               <div className="p-4 text-sm text-muted-foreground text-center">
                 No results found
               </div>
             )}
 
-            {!isLoading && hasMinimumChars && validResults.length > 0 && (
+            {shouldRenderResults && (
               <CommandGroup heading="Results">
-                {validResults.map((result, idx) => (
+                {safeResults.map((result, idx) => (
                   <CommandItem
                     key={`${result.type}-${result.id}-${idx}`}
                     onSelect={() => handleSelect(result)}
