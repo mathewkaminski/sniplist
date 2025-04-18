@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
   CommandItem,
 } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { SearchIcon, User, ListMusic } from "lucide-react";
+import { SearchIcon, User, ListMusic, Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useSearch } from "@/hooks/useSearch";
 import { useNavigate } from "react-router-dom";
@@ -81,9 +82,18 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             />
           </div>
 
-          <CommandList className="max-h-[300px] overflow-y-auto bg-gray-50 border-t">
+          <CommandList className="max-h-[300px] overflow-y-auto">
             {isLoading && (
-              <div className="p-4 text-sm text-muted-foreground">Loading results...</div>
+              <div className="p-4 text-sm text-muted-foreground flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Searching...
+              </div>
+            )}
+
+            {!isLoading && hasMinimumChars && safeResults.length === 0 && (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                No results found
+              </div>
             )}
 
             {!isLoading && shouldRenderResults && (
@@ -94,14 +104,14 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     <CommandItem
                       key={`${result.type}-${result.id}-${idx}`}
                       onSelect={() => handleSelect(result)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
                     >
                       {result.type.toLowerCase() === "profile" ? (
                         <User className="h-4 w-4 opacity-70" />
                       ) : (
                         <ListMusic className="h-4 w-4 opacity-70" />
                       )}
-                      <span>{result.title}</span>
+                      <span className="flex-1 truncate">{result.title}</span>
                       <Badge variant="outline" className="ml-auto">
                         {result.type}
                       </Badge>
@@ -111,8 +121,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               </CommandGroup>
             )}
 
-            {/* This will show only if CommandGroup renders nothing */}
-            <CommandEmpty>No results found.</CommandEmpty>
+            {!hasMinimumChars && (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                Type at least 3 characters to search
+              </div>
+            )}
           </CommandList>
         </Command>
       </DialogContent>
