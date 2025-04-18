@@ -46,22 +46,33 @@ serve(async (req) => {
     })
     
     if (error) {
-      console.error("Database query error:", error)
+      console.error("❌ RPC error:", error);
       return new Response(
-        JSON.stringify({ data: [], error: `Database query error: ${error.message}` }),
-        { 
+        JSON.stringify({ data: [], error: `RPC error: ${error.message}` }),
+        {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500 
+          status: 500,
         }
-      )
+      );
     }
-    
-    console.log(`Search found ${data?.length || 0} results`)
-    
+
+    // Sanitize to remove circular references / prototype baggage
+    const plainResults = (data || []).map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type,
+      created_at: item.created_at,
+    }));
+
+    console.log("✅ Cleaned search results:", plainResults);
+
     return new Response(
-      JSON.stringify({ data }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+      JSON.stringify({ data: plainResults }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Unexpected error:", error)
     return new Response(
