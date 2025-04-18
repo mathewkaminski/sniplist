@@ -10,29 +10,6 @@ export interface SearchResult {
   created_at: string;
 }
 
-const sanitizeSearchResults = (results: unknown[]): SearchResult[] => {
-  try {
-    // Use JSON parse/stringify to remove circular references and clone data
-    const sanitizedData = JSON.parse(JSON.stringify(results));
-    
-    // Validate and transform the data
-    return sanitizedData.filter((item: unknown): item is SearchResult => {
-      // Type guard to ensure each item has the required properties
-      const validItem = item as Partial<SearchResult>;
-      return (
-        typeof validItem?.type === 'string' &&
-        (validItem.type === 'profile' || validItem.type === 'sniplist') &&
-        typeof validItem?.title === 'string' &&
-        typeof validItem?.id === 'string' &&
-        typeof validItem?.created_at === 'string'
-      );
-    });
-  } catch (error) {
-    console.error("Error sanitizing search results:", error);
-    return [];
-  }
-};
-
 export function useSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const MIN_SEARCH_LENGTH = 3;
@@ -46,7 +23,7 @@ export function useSearch() {
 
       console.log("🔍 Calling Edge Function with term:", trimmedTerm);
 
-      const { data: responseData, error } = await supabase.functions.invoke("search_sniplists", {
+      const { data, error } = await supabase.functions.invoke("search_sniplists", {
         body: { searchTerm: `%${trimmedTerm}%` },
       });
 
@@ -55,17 +32,25 @@ export function useSearch() {
         return [];
       }
 
-      if (responseData?.data && Array.isArray(responseData.data)) {
-        console.log("✅ Raw search results:", responseData.data);
-        const sanitizedResults = sanitizeSearchResults(responseData.data);
-        console.log("✅ Sanitized search results:", sanitizedResults);
-        return sanitizedResults;
-      }
+      try {
+        const rawData = data?.data;
+        if (!Array.isArray(rawData)) throw new Error("Invalid format");
 
-      console.warn("⚠️ Unexpected search format:", responseData);
-      return [];
+        const sanitized = rawData.map((item) => ({
+          type: item.type,
+          title: item.title,
+          id: item.id,
+          created_at: item.created_at,
+        }));
+
+        console.log("✅ Sanitized results:", sanitized);
+        return sanitized as SearchResult[];
+      } catch (err) {
+        console.error("⚠️ Failed to parse search results", err);
+        return [];
+      }
     },
-    enabled: false, // Manual refetch
+    enabled: false, // only manual refetch
   });
 
   useEffect(() => {
