@@ -10,6 +10,29 @@ export interface SearchResult {
   created_at: string;
 }
 
+const sanitizeSearchResults = (results: unknown[]): SearchResult[] => {
+  try {
+    // Use JSON parse/stringify to remove circular references and clone data
+    const sanitizedData = JSON.parse(JSON.stringify(results));
+    
+    // Validate and transform the data
+    return sanitizedData.filter((item: unknown): item is SearchResult => {
+      // Type guard to ensure each item has the required properties
+      const validItem = item as Partial<SearchResult>;
+      return (
+        typeof validItem?.type === 'string' &&
+        (validItem.type === 'profile' || validItem.type === 'sniplist') &&
+        typeof validItem?.title === 'string' &&
+        typeof validItem?.id === 'string' &&
+        typeof validItem?.created_at === 'string'
+      );
+    });
+  } catch (error) {
+    console.error("Error sanitizing search results:", error);
+    return [];
+  }
+};
+
 export function useSearch() {
   const [searchTerm, setSearchTerm] = useState("");
   const MIN_SEARCH_LENGTH = 3;
@@ -23,7 +46,7 @@ export function useSearch() {
 
       console.log("🔍 Calling Edge Function with term:", trimmedTerm);
 
-      const { data, error } = await supabase.functions.invoke("search_sniplists", {
+      const { data: responseData, error } = await supabase.functions.invoke("search_sniplists", {
         body: { searchTerm: `%${trimmedTerm}%` },
       });
 
@@ -32,12 +55,14 @@ export function useSearch() {
         return [];
       }
 
-      if (data && Array.isArray(data.data)) {
-        console.log("✅ Received search results:", data.data);
-        return data.data as SearchResult[];
+      if (responseData?.data && Array.isArray(responseData.data)) {
+        console.log("✅ Raw search results:", responseData.data);
+        const sanitizedResults = sanitizeSearchResults(responseData.data);
+        console.log("✅ Sanitized search results:", sanitizedResults);
+        return sanitizedResults;
       }
 
-      console.warn("⚠️ Unexpected search format:", data);
+      console.warn("⚠️ Unexpected search format:", responseData);
       return [];
     },
     enabled: false, // Manual refetch
