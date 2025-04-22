@@ -33,15 +33,22 @@ export function useSearch() {
       }
 
       try {
-        const rawData = data?.data;
-        if (!Array.isArray(rawData)) throw new Error("Invalid format");
+        console.log("📦 Raw edge function response:", data);
+        
+        // Check if data.data exists and is an array
+        const rawData = Array.isArray(data?.data) ? data.data : [];
+        
+        if (!rawData.length) {
+          console.log("⚠️ No results returned or invalid data format");
+          return [];
+        }
 
         const sanitized = rawData.map((item) => ({
-          type: item.type,
-          title: item.title,
-          id: item.id,
-          created_at: item.created_at,
-        }));
+          type: item.type || "unknown",
+          title: item.title || "Untitled",
+          id: item.id || "",
+          created_at: item.created_at || new Date().toISOString(),
+        })).filter(item => item.id && item.title);
 
         console.log("✅ Sanitized results:", sanitized);
         return sanitized as SearchResult[];
@@ -55,6 +62,7 @@ export function useSearch() {
 
   useEffect(() => {
     if (trimmedTerm.length >= MIN_SEARCH_LENGTH) {
+      console.log("🔄 Triggering search refetch for term:", trimmedTerm);
       refetch();
     }
   }, [trimmedTerm, refetch]);

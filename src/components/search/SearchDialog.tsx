@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -27,9 +28,14 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const { searchTerm, setSearchTerm, results, isLoading, hasMinimumChars } = useSearch();
   const navigate = useNavigate();
 
-  const safeResults: SearchResult[] = results.filter(
-    (r): r is SearchResult => !!r?.title && !!r?.id && !!r?.type
-  );
+  // Make sure we have valid results with required fields
+  const safeResults = Array.isArray(results) 
+    ? results.filter(
+        (r): r is SearchResult => 
+          !!r && typeof r === 'object' && 
+          !!r.title && !!r.id && !!r.type
+      )
+    : [];
 
   const shouldRenderResults = hasMinimumChars && safeResults.length > 0;
 
@@ -75,6 +81,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
               placeholder="Search sniplists and users..."
               value={searchTerm}
               onValueChange={(value) => {
+                console.log("📝 Search input changed:", value);
                 setSearchTerm(value);
               }}
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
@@ -98,23 +105,26 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
             {shouldRenderResults && (
               <CommandGroup heading="Results">
-                {safeResults.map((result, idx) => (
-                  <CommandItem
-                    key={`${result.type}-${result.id}-${idx}`}
-                    onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
-                  >
-                    {result.type.toLowerCase() === "profile" ? (
-                      <User className="h-4 w-4 opacity-70" />
-                    ) : (
-                      <ListMusic className="h-4 w-4 opacity-70" />
-                    )}
-                    <span className="flex-1 truncate">{result.title}</span>
-                    <Badge variant="outline" className="ml-auto">
-                      {result.type}
-                    </Badge>
-                  </CommandItem>
-                ))}
+                {safeResults.map((result, idx) => {
+                  console.log("🧷 Rendering result:", result);
+                  return (
+                    <CommandItem
+                      key={`${result.type}-${result.id}-${idx}`}
+                      onSelect={() => handleSelect(result)}
+                      className="flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-100"
+                    >
+                      {result.type.toLowerCase() === "profile" ? (
+                        <User className="h-4 w-4 opacity-70" />
+                      ) : (
+                        <ListMusic className="h-4 w-4 opacity-70" />
+                      )}
+                      <span className="flex-1 truncate">{result.title}</span>
+                      <Badge variant="outline" className="ml-auto">
+                        {result.type}
+                      </Badge>
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             )}
 
