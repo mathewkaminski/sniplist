@@ -18,19 +18,21 @@ export function Header() {
     navigate("/");
   };
 
+  // This function now correctly navigates to /snippets
   const handleMySnippets = () => {
     if (user) {
       navigate("/snippets");
     } else {
-      navigate("/");
+      navigate("/auth");
     }
   };
 
+  // This function now correctly navigates to /user/:userId/sniplists
   const handleMySniplists = () => {
     if (user) {
       navigate(`/user/${user.id}/sniplists`);
     } else {
-      navigate("/");
+      navigate("/auth");
     }
   };
 
@@ -48,18 +50,18 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleMySnippets}
-            title="My Snippets"
-          >
-            <FileText className="h-6 w-6 text-black" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
             onClick={handleMySniplists}
             title="My Sniplists"
           >
             <ListMusic className="h-6 w-6 text-black" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleMySnippets}
+            title="My Snippets"
+          >
+            <FileText className="h-6 w-6 text-black" />
           </Button>
           {user && (
             <Button
