@@ -6,11 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { SearchDialog } from "./search/SearchDialog";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Header() {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const { user } = useCurrentUser();
+  const isMobile = useIsMobile();
 
   const handleHomeClick = () => {
     navigate("/");
@@ -18,7 +20,7 @@ export function Header() {
 
   const handleMySnippets = () => {
     if (user) {
-      navigate(`/user/${user.id}/sniplists`);
+      navigate("/snippets");
     } else {
       navigate("/");
     }
@@ -26,7 +28,7 @@ export function Header() {
 
   const handleMySniplists = () => {
     if (user) {
-      navigate("/snippets");
+      navigate(`/user/${user.id}/sniplists`);
     } else {
       navigate("/");
     }
@@ -47,6 +49,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={handleMySnippets}
+            title="My Snippets"
           >
             <FileText className="h-6 w-6 text-black" />
           </Button>
@@ -54,6 +57,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={handleMySniplists}
+            title="My Sniplists"
           >
             <ListMusic className="h-6 w-6 text-black" />
           </Button>
