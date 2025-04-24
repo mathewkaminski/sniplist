@@ -41,6 +41,7 @@ declare namespace YT {
       fs?: number;
       rel?: number;
       modestbranding?: number;
+      playsinline?: number;
       start?: number;
     };
     events?: {
