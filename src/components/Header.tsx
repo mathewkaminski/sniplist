@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Home, ListMusic, FileText, HelpCircle, Search, Heart } from "lucide-react";
 import { UserMenu } from "@/components/UserMenu";
@@ -15,7 +16,7 @@ export function Header() {
     navigate("/");
   };
 
-  const handleMySniplists = async () => {
+  const handleMySnippets = () => {
     if (user) {
       navigate(`/user/${user.id}/sniplists`);
     } else {
@@ -23,7 +24,7 @@ export function Header() {
     }
   };
 
-  const handleMySnippets = async () => {
+  const handleMySniplists = () => {
     if (user) {
       navigate("/snippets");
     } else {
@@ -45,16 +46,16 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleMySniplists}
+            onClick={handleMySnippets}
           >
-            <ListMusic className="h-6 w-6 text-black" />
+            <FileText className="h-6 w-6 text-black" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleMySnippets}
+            onClick={handleMySniplists}
           >
-            <FileText className="h-6 w-6 text-black" />
+            <ListMusic className="h-6 w-6 text-black" />
           </Button>
           {user && (
             <Button
@@ -87,11 +88,11 @@ export function Header() {
           >
             <Search className="h-5 w-5 text-gray-600" />
           </Button>
-          <Button variant="ghost" className="text-black" onClick={() => navigate("/contact-us")}>
+          <Button variant="ghost" className="text-black hidden sm:flex" onClick={() => navigate("/contact-us")}>
             <HelpCircle className="mr-2 h-4 w-4 text-black" />
             Help
           </Button>
-          <Button variant="ghost" className="text-black" onClick={handleHomeClick}>
+          <Button variant="ghost" className="text-black hidden sm:flex" onClick={handleHomeClick}>
             <PlusCircle className="mr-2 h-4 w-4 text-black" />
             Add Snippet
           </Button>
