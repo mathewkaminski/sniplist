@@ -12,10 +12,12 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
     loading,
     currentSnippetIndex,
     playlistComplete,
+    isCurrentSnippetPlaying,
     setCurrentSnippetIndex,
     handleSnippetEnd,
     handleRestartPlaylist,
     setPlaylistComplete,
+    setSnippetPlayingStatus
   } = useSniplistPlayback(sniplistId);
 
   if (loading) {
@@ -44,7 +46,8 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
       onSnippetEnd={handleSnippetEnd}
       onSnippetSelect={setCurrentSnippetIndex}
       setPlaylistComplete={setPlaylistComplete}
+      isCurrentSnippetPlaying={isCurrentSnippetPlaying}
+      setSnippetPlayingStatus={setSnippetPlayingStatus}
     />
   );
 }
-

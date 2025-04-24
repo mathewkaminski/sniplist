@@ -1,6 +1,7 @@
 
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { PlayerButton } from "./PlayerButton";
+import { useEffect } from "react";
 
 interface SnippetPlayerProps {
   videoId: string;
@@ -8,6 +9,7 @@ interface SnippetPlayerProps {
   endTime: number;
   autoplay?: boolean;
   onEnded?: () => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 export function SnippetPlayer({ 
@@ -15,7 +17,8 @@ export function SnippetPlayer({
   startTime, 
   endTime, 
   autoplay = false, 
-  onEnded 
+  onEnded,
+  onPlayStateChange
 }: SnippetPlayerProps) {
   const {
     playerRef,
@@ -29,6 +32,13 @@ export function SnippetPlayer({
     autoplay,
     onEnded
   });
+
+  // Report play state changes to parent component
+  useEffect(() => {
+    if (onPlayStateChange) {
+      onPlayStateChange(isPlaying);
+    }
+  }, [isPlaying, onPlayStateChange]);
 
   return (
     <div className="flex items-center gap-2">

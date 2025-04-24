@@ -22,6 +22,7 @@ export function useYouTubePlayer({
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInitialized = useRef(false);
   const playerId = `youtube-player-${videoId}-${startTime}-${Math.random().toString(36).substring(2, 9)}`;
+  const autoplayAttempted = useRef(false);
   
   const { isAPIReady } = useYouTubeAPI();
   
@@ -47,6 +48,22 @@ export function useYouTubePlayer({
     onEnded
   });
 
+  // Force play when player is ready if autoplay is enabled
+  useEffect(() => {
+    if (playerReady && player && autoplay && !autoplayAttempted.current) {
+      autoplayAttempted.current = true;
+      setTimeout(() => {
+        console.log(`Attempting autoplay for ${videoId} at ${startTime}`);
+        try {
+          player.seekTo(startTime, true);
+          player.playVideo();
+        } catch (e) {
+          console.error("Error during autoplay attempt:", e);
+        }
+      }, 500); // Small delay to ensure player is fully ready
+    }
+  }, [playerReady, player, autoplay, videoId, startTime]);
+
   // Initialize player when API is ready
   useEffect(() => {
     if (isAPIReady && !playerInitialized.current && playerRef.current) {
@@ -69,6 +86,7 @@ export function useYouTubePlayer({
             fs: 0,
             rel: 0,
             modestbranding: 1,
+            playsinline: 1, // Important for mobile playback
             start: Math.floor(startTime)
           },
           events: {

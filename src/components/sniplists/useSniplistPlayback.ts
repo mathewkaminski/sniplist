@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,8 +10,8 @@ export const useSniplistPlayback = (sniplistId: string) => {
   const [loading, setLoading] = useState(true);
   const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
   const [playlistComplete, setPlaylistComplete] = useState(false);
+  const [isCurrentSnippetPlaying, setIsCurrentSnippetPlaying] = useState(false);
   const isMounted = useRef(true);
-  const shouldAdvance = useRef(false);
   const snippetTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -129,40 +130,50 @@ export const useSniplistPlayback = (sniplistId: string) => {
     }
   };
 
+  // Reset timer when a snippet starts playing
   useEffect(() => {
-    if (shouldAdvance.current) {
-      shouldAdvance.current = false;
-      advanceToNextSnippet();
+    if (isCurrentSnippetPlaying && snippets.length > 0) {
+      console.log(`Snippet ${currentSnippetIndex + 1} is actively playing now, managing playback timer`);
+      resetSnippetTimer();
+      
+      return () => {
+        if (snippetTimer.current) {
+          clearTimeout(snippetTimer.current);
+          snippetTimer.current = null;
+        }
+      };
     }
-  }, [currentSnippetIndex, snippets.length]);
-
-  useEffect(() => {
+  }, [isCurrentSnippetPlaying, currentSnippetIndex]);
+  
+  // Clear existing timer and set a new one for the current snippet
+  const resetSnippetTimer = () => {
     if (snippetTimer.current) {
       clearTimeout(snippetTimer.current);
       snippetTimer.current = null;
     }
 
     if (!playlistComplete && snippets.length > 0) {
-      console.log(`Setting timer for snippet ${currentSnippetIndex + 1} of ${snippets.length}`);
+      const currentSnippet = snippets[currentSnippetIndex];
+      if (!currentSnippet) return;
+      
+      const snippetDuration = currentSnippet.end_time - currentSnippet.start_time;
+      const timeoutDuration = Math.max(snippetDuration * 1000, 5000); // Use actual duration or minimum 5 seconds
+      
+      console.log(`Setting timer for snippet ${currentSnippetIndex + 1} of ${snippets.length}, duration: ${timeoutDuration}ms`);
       
       snippetTimer.current = setTimeout(() => {
-        console.log("20 seconds elapsed, advancing to next snippet");
+        console.log(`Snippet ${currentSnippetIndex + 1} timer elapsed, advancing...`);
         advanceToNextSnippet();
-      }, 20000);
-
-      return () => {
-        if (snippetTimer.current) {
-          clearTimeout(snippetTimer.current);
-        }
-      };
+      }, timeoutDuration + 1000); // Add 1 second buffer
     }
-  }, [currentSnippetIndex, playlistComplete, snippets.length]);
+  };
 
   const advanceToNextSnippet = () => {
     console.log(`Advancing from snippet ${currentSnippetIndex} to ${currentSnippetIndex + 1}, total: ${snippets.length}`);
     
     if (currentSnippetIndex < snippets.length - 1) {
       setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+      setIsCurrentSnippetPlaying(false); // Reset play state for new snippet
       console.log(`Advanced to snippet ${currentSnippetIndex + 1}`);
     } else {
       console.log("Reached end of playlist");
@@ -172,13 +183,19 @@ export const useSniplistPlayback = (sniplistId: string) => {
   };
 
   const handleSnippetEnd = () => {
-    console.log("Snippet ended, current index:", currentSnippetIndex, "total snippets:", snippets.length);
+    console.log("Snippet ended naturally, current index:", currentSnippetIndex);
     advanceToNextSnippet();
   };
 
   const handleRestartPlaylist = () => {
     setCurrentSnippetIndex(0);
     setPlaylistComplete(false);
+    setIsCurrentSnippetPlaying(false);
+  };
+
+  const setSnippetPlayingStatus = (isPlaying: boolean) => {
+    console.log(`Setting snippet ${currentSnippetIndex + 1} playing status to: ${isPlaying}`);
+    setIsCurrentSnippetPlaying(isPlaying);
   };
 
   return {
@@ -186,9 +203,11 @@ export const useSniplistPlayback = (sniplistId: string) => {
     loading,
     currentSnippetIndex,
     playlistComplete,
+    isCurrentSnippetPlaying,
     setCurrentSnippetIndex,
     handleSnippetEnd,
     handleRestartPlaylist,
     setPlaylistComplete,
+    setSnippetPlayingStatus
   };
 };

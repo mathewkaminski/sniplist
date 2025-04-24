@@ -16,6 +16,8 @@ interface NowPlayingProps {
   onSnippetEnd: () => void;
   onSnippetSelect: (index: number) => void;
   setPlaylistComplete: (complete: boolean) => void;
+  isCurrentSnippetPlaying: boolean;
+  setSnippetPlayingStatus: (isPlaying: boolean) => void;
 }
 
 export function NowPlaying({
@@ -25,7 +27,9 @@ export function NowPlaying({
   onClose,
   onSnippetEnd,
   onSnippetSelect,
-  setPlaylistComplete
+  setPlaylistComplete,
+  isCurrentSnippetPlaying,
+  setSnippetPlayingStatus
 }: NowPlayingProps) {
   useEffect(() => {
     // Track playlist progress when completed songs >= 2
@@ -104,6 +108,7 @@ export function NowPlaying({
                 endTime={currentSnippet.end_time}
                 autoplay={true}
                 onEnded={onSnippetEnd}
+                onPlayStateChange={setSnippetPlayingStatus}
               />
               <div className="ml-4">
                 <p className="text-lg font-medium">
