@@ -16,11 +16,12 @@ export function PlayerButton({ isPlaying, playerReady, onToggle }: PlayerButtonP
       onClick={onToggle}
       disabled={!playerReady}
       title={playerReady ? (isPlaying ? "Pause" : "Play") : "Loading player..."}
+      className="w-12 h-12 touch-manipulation" // Improved touch target size
     >
       {isPlaying ? (
-        <Pause className="h-4 w-4" />
+        <Pause className="h-6 w-6" />
       ) : (
-        <Play className="h-4 w-4" />
+        <Play className="h-6 w-6" />
       )}
     </Button>
   );
