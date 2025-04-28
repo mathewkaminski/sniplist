@@ -4,9 +4,11 @@ import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
 import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getYoutubeVideoUrl } from "@/utils/youtube";
 import { supabase } from "@/integrations/supabase/client";
+import { PlayerButton } from "@/components/PlayerButton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NowPlayingProps {
   currentSnippet: Snippet;
@@ -31,6 +33,9 @@ export function NowPlaying({
   isCurrentSnippetPlaying,
   setSnippetPlayingStatus
 }: NowPlayingProps) {
+  const isMobile = useIsMobile();
+  const [playerReady, setPlayerReady] = useState(false);
+
   useEffect(() => {
     // Track playlist progress when completed songs >= 2
     if (currentSnippetIndex >= 2 && currentSnippet?.sniplist_id) {
@@ -51,7 +56,19 @@ export function NowPlaying({
 
   useEffect(() => {
     console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
+    setPlayerReady(false);
+    // Give a moment for the player to initialize
+    const timer = setTimeout(() => {
+      setPlayerReady(true);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
   }, [currentSnippet, currentSnippetIndex, snippets.length]);
+
+  // Main playlist play/pause toggle
+  const handleMainPlayPause = () => {
+    setSnippetPlayingStatus(!isCurrentSnippetPlaying);
+  };
 
   if (!currentSnippet) {
     return (
@@ -99,6 +116,17 @@ export function NowPlaying({
         </div>
         
         <div className="flex flex-col">
+          {isMobile && (
+            <div className="mb-4 flex justify-center">
+              <PlayerButton
+                isPlaying={isCurrentSnippetPlaying}
+                playerReady={playerReady}
+                onToggle={handleMainPlayPause}
+                size="large"
+              />
+            </div>
+          )}
+          
           <div className="mb-4">
             <div className="flex items-center">
               <SnippetPlayer
@@ -106,7 +134,7 @@ export function NowPlaying({
                 videoId={currentSnippet.video_id}
                 startTime={currentSnippet.start_time}
                 endTime={currentSnippet.end_time}
-                autoplay={true}
+                autoplay={!isMobile} // Don't autoplay on mobile
                 onEnded={onSnippetEnd}
                 onPlayStateChange={setSnippetPlayingStatus}
               />
@@ -129,6 +157,10 @@ export function NowPlaying({
             onSnippetSelect={(index) => {
               onSnippetSelect(index);
               setPlaylistComplete(false);
+              // On mobile, we want to start playing immediately when a snippet is selected
+              if (isMobile) {
+                setTimeout(() => setSnippetPlayingStatus(true), 500);
+              }
             }}
           />
         </div>

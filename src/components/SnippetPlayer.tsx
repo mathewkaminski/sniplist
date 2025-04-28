@@ -1,7 +1,8 @@
 
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { PlayerButton } from "./PlayerButton";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SnippetPlayerProps {
   videoId: string;
@@ -10,6 +11,7 @@ interface SnippetPlayerProps {
   autoplay?: boolean;
   onEnded?: () => void;
   onPlayStateChange?: (isPlaying: boolean) => void;
+  size?: "default" | "large";
 }
 
 export function SnippetPlayer({ 
@@ -18,8 +20,12 @@ export function SnippetPlayer({
   endTime, 
   autoplay = false, 
   onEnded,
-  onPlayStateChange
+  onPlayStateChange,
+  size = "default"
 }: SnippetPlayerProps) {
+  const isMobile = useIsMobile();
+  const manualPlayAttempted = useRef(false);
+  
   const {
     playerRef,
     isPlaying,
@@ -29,7 +35,7 @@ export function SnippetPlayer({
     videoId,
     startTime,
     endTime,
-    autoplay,
+    autoplay: isMobile ? false : autoplay, // Don't rely on autoplay on mobile
     onEnded
   });
 
@@ -40,6 +46,12 @@ export function SnippetPlayer({
     }
   }, [isPlaying, onPlayStateChange]);
 
+  // Enhanced toggle function for mobile
+  const handleTogglePlay = () => {
+    manualPlayAttempted.current = true;
+    togglePlayPause();
+  };
+
   return (
     <div className="flex items-center gap-2">
       <div ref={playerRef} className="w-1 h-1 opacity-0">
@@ -48,7 +60,8 @@ export function SnippetPlayer({
       <PlayerButton 
         isPlaying={isPlaying}
         playerReady={playerReady}
-        onToggle={togglePlayPause}
+        onToggle={handleTogglePlay}
+        size={size}
       />
     </div>
   );
