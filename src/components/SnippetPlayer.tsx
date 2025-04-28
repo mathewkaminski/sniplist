@@ -1,7 +1,7 @@
 
 import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
 import { PlayerButton } from "./PlayerButton";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SnippetPlayerProps {
@@ -12,6 +12,7 @@ interface SnippetPlayerProps {
   onEnded?: () => void;
   onPlayStateChange?: (isPlaying: boolean) => void;
   size?: "default" | "large";
+  forcePlay?: boolean;
 }
 
 export function SnippetPlayer({ 
@@ -21,10 +22,12 @@ export function SnippetPlayer({
   autoplay = false, 
   onEnded,
   onPlayStateChange,
-  size = "default"
+  size = "default",
+  forcePlay = false
 }: SnippetPlayerProps) {
   const isMobile = useIsMobile();
   const manualPlayAttempted = useRef(false);
+  const [isPendingPlay, setIsPendingPlay] = useState(false);
   
   const {
     playerRef,
@@ -35,8 +38,9 @@ export function SnippetPlayer({
     videoId,
     startTime,
     endTime,
-    autoplay: isMobile ? false : autoplay, // Don't rely on autoplay on mobile
-    onEnded
+    autoplay: isMobile ? false : autoplay, // Don't autoplay on mobile by default
+    onEnded,
+    forcePlay: forcePlay || isPendingPlay
   });
 
   // Report play state changes to parent component
@@ -46,10 +50,26 @@ export function SnippetPlayer({
     }
   }, [isPlaying, onPlayStateChange]);
 
+  // Handle pending play request (e.g., from parent component)
+  useEffect(() => {
+    if (forcePlay && playerReady && !isPlaying) {
+      console.log("SnippetPlayer: Force play received, attempting to play");
+      togglePlayPause();
+      setIsPendingPlay(false);
+    }
+  }, [forcePlay, playerReady, isPlaying, togglePlayPause]);
+
   // Enhanced toggle function for mobile
   const handleTogglePlay = () => {
     manualPlayAttempted.current = true;
-    togglePlayPause();
+    
+    // If player isn't ready yet, mark we want to play as soon as it's ready
+    if (!playerReady) {
+      console.log("Player not ready, marking pending play");
+      setIsPendingPlay(true);
+    } else {
+      togglePlayPause();
+    }
   };
 
   return (

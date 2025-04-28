@@ -4,7 +4,7 @@ import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
 import { Snippet } from "./types";
 import { SnippetList } from "./SnippetList";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getYoutubeVideoUrl } from "@/utils/youtube";
 import { supabase } from "@/integrations/supabase/client";
 import { PlayerButton } from "@/components/PlayerButton";
@@ -35,6 +35,9 @@ export function NowPlaying({
 }: NowPlayingProps) {
   const isMobile = useIsMobile();
   const [playerReady, setPlayerReady] = useState(false);
+  const [forcePlay, setForcePlay] = useState(false);
+  const playerReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const readyForMainButtonControl = useRef(false);
 
   useEffect(() => {
     // Track playlist progress when completed songs >= 2
@@ -57,17 +60,47 @@ export function NowPlaying({
   useEffect(() => {
     console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
     setPlayerReady(false);
+    setForcePlay(false);
+    readyForMainButtonControl.current = false;
+    
+    // Clear any existing timeout
+    if (playerReadyTimeoutRef.current) {
+      clearTimeout(playerReadyTimeoutRef.current);
+    }
+    
     // Give a moment for the player to initialize
-    const timer = setTimeout(() => {
+    playerReadyTimeoutRef.current = setTimeout(() => {
       setPlayerReady(true);
+      readyForMainButtonControl.current = true;
     }, 1000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      if (playerReadyTimeoutRef.current) {
+        clearTimeout(playerReadyTimeoutRef.current);
+        playerReadyTimeoutRef.current = null;
+      }
+    };
   }, [currentSnippet, currentSnippetIndex, snippets.length]);
 
-  // Main playlist play/pause toggle
+  // Main playlist play/pause toggle - enhanced for mobile
   const handleMainPlayPause = () => {
-    setSnippetPlayingStatus(!isCurrentSnippetPlaying);
+    if (!readyForMainButtonControl.current) {
+      console.log("Player not fully initialized yet, waiting...");
+      return;
+    }
+    
+    if (isMobile && !isCurrentSnippetPlaying) {
+      console.log("Mobile main button play requested, forcing play");
+      setForcePlay(true);
+      setSnippetPlayingStatus(true);
+      
+      // Reset force play flag after a delay
+      setTimeout(() => {
+        setForcePlay(false);
+      }, 1000);
+    } else {
+      setSnippetPlayingStatus(!isCurrentSnippetPlaying);
+    }
   };
 
   if (!currentSnippet) {
@@ -137,13 +170,14 @@ export function NowPlaying({
                 autoplay={!isMobile} // Don't autoplay on mobile
                 onEnded={onSnippetEnd}
                 onPlayStateChange={setSnippetPlayingStatus}
+                forcePlay={forcePlay}
               />
-              <div className="ml-4">
-                <p className="text-lg font-medium">
+              <div className="ml-4 flex-1">
+                <p className="text-lg font-medium line-clamp-1">
                   {displayTitle}
                 </p>
                 {currentSnippet.comments && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 line-clamp-1">
                     {currentSnippet.comments}
                   </p>
                 )}
@@ -157,9 +191,19 @@ export function NowPlaying({
             onSnippetSelect={(index) => {
               onSnippetSelect(index);
               setPlaylistComplete(false);
+              
               // On mobile, we want to start playing immediately when a snippet is selected
               if (isMobile) {
-                setTimeout(() => setSnippetPlayingStatus(true), 500);
+                console.log("Mobile: snippet selected, will try to autoplay");
+                // Using a slightly longer delay to ensure component gets updated
+                setTimeout(() => {
+                  setForcePlay(true);
+                  setSnippetPlayingStatus(true);
+                  
+                  setTimeout(() => {
+                    setForcePlay(false);
+                  }, 1000);
+                }, 300);
               }
             }}
           />

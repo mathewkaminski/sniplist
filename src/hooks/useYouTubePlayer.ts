@@ -1,5 +1,5 @@
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useYouTubeAPI } from "./useYouTubeAPI";
 import { usePlayerState } from "./usePlayerState";
 import { usePlaybackControl } from "./usePlaybackControl";
@@ -11,6 +11,7 @@ interface UseYouTubePlayerProps {
   endTime: number;
   autoplay?: boolean;
   onEnded?: () => void;
+  forcePlay?: boolean;
 }
 
 export function useYouTubePlayer({
@@ -18,13 +19,16 @@ export function useYouTubePlayer({
   startTime,
   endTime,
   autoplay = false,
-  onEnded
+  onEnded,
+  forcePlay = false
 }: UseYouTubePlayerProps) {
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInitialized = useRef(false);
   const playerId = `youtube-player-${videoId}-${startTime}-${Math.random().toString(36).substring(2, 9)}`;
   const autoplayAttempted = useRef(false);
+  const forcePlayAttempted = useRef(false);
   const isMobile = useIsMobile();
+  const mobilePlayCheckTimerId = useRef<number | null>(null);
   
   const { isAPIReady } = useYouTubeAPI();
   
@@ -50,26 +54,89 @@ export function useYouTubePlayer({
     onEnded
   });
 
-  // Force play when player is ready if autoplay is enabled
+  // Mobile-specific playback monitoring
+  useEffect(() => {
+    if (isMobile && player && playerReady && isPlaying) {
+      // Check more frequently on mobile to ensure playback is progressing
+      mobilePlayCheckTimerId.current = window.setInterval(() => {
+        try {
+          const playerState = player.getPlayerState();
+          if (playerState !== YT.PlayerState.PLAYING && playerState !== YT.PlayerState.BUFFERING) {
+            console.log("Mobile playback stalled, state:", playerState);
+            player.playVideo();
+          }
+        } catch (e) {
+          console.error("Error during mobile playback check:", e);
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      if (mobilePlayCheckTimerId.current) {
+        clearInterval(mobilePlayCheckTimerId.current);
+        mobilePlayCheckTimerId.current = null;
+      }
+    };
+  }, [isMobile, player, playerReady, isPlaying]);
+
+  // Force play when explicitly requested (e.g., from parent component)
+  useEffect(() => {
+    if (playerReady && player && forcePlay && !forcePlayAttempted.current && !isPlaying) {
+      forcePlayAttempted.current = true;
+      console.log(`Force play requested for ${videoId} at ${startTime}`);
+      
+      try {
+        player.seekTo(startTime, true);
+        setTimeout(() => {
+          if (player) {
+            player.playVideo();
+            setIsPlaying(true);
+            
+            // Double check that playback actually started
+            setTimeout(() => {
+              try {
+                if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                  console.log("Force play didn't work, trying again");
+                  player.playVideo();
+                }
+              } catch (e) {
+                console.error("Error during force play check:", e);
+              }
+            }, 500);
+          }
+        }, 100);
+      } catch (e) {
+        console.error("Error during force play:", e);
+        forcePlayAttempted.current = false; // Reset so we can try again
+      }
+    }
+    
+    // Reset flag when forcePlay becomes false to allow future forced plays
+    if (!forcePlay) {
+      forcePlayAttempted.current = false;
+    }
+  }, [playerReady, player, forcePlay, videoId, startTime, isPlaying, setIsPlaying]);
+
+  // Regular autoplay when player is ready
   useEffect(() => {
     if (playerReady && player && autoplay && !autoplayAttempted.current) {
       autoplayAttempted.current = true;
-      const delay = isMobile ? 1000 : 500; // Longer delay for mobile
+      const delay = isMobile ? 1000 : 300; // Longer delay for mobile
       
       setTimeout(() => {
         console.log(`Attempting autoplay for ${videoId} at ${startTime}, isMobile: ${isMobile}`);
         try {
           player.seekTo(startTime, true);
           player.playVideo();
+          setIsPlaying(true);
           
           // On mobile, we need an extra check to ensure playback actually started
           if (isMobile) {
             setTimeout(() => {
               try {
-                // Check if video is actually playing
                 const playerState = player.getPlayerState();
-                if (playerState !== window.YT.PlayerState.PLAYING) {
-                  console.log("Mobile autoplay failed, attempting again");
+                if (playerState !== YT.PlayerState.PLAYING && playerState !== YT.PlayerState.BUFFERING) {
+                  console.log("Mobile autoplay failed, trying again");
                   player.playVideo();
                 }
               } catch (e) {
@@ -82,7 +149,7 @@ export function useYouTubePlayer({
         }
       }, delay);
     }
-  }, [playerReady, player, autoplay, videoId, startTime, isMobile]);
+  }, [playerReady, player, autoplay, videoId, startTime, isMobile, setIsPlaying]);
 
   // Enhanced togglePlayPause for mobile
   const enhancedTogglePlayPause = useCallback(() => {
@@ -98,8 +165,22 @@ export function useYouTubePlayer({
       try {
         player.seekTo(startTime, true);
         setTimeout(() => {
-          player.playVideo();
-          setIsPlaying(true);
+          if (player) {
+            player.playVideo();
+            setIsPlaying(true);
+            
+            // Double-check playback actually started
+            setTimeout(() => {
+              try {
+                if (player && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                  console.log("Mobile play retry needed");
+                  player.playVideo();
+                }
+              } catch (e) {
+                console.error("Error during mobile play check:", e);
+              }
+            }, 500);
+          }
         }, 100);
       } catch (e) {
         console.error("Error during mobile play:", e);
@@ -125,7 +206,7 @@ export function useYouTubePlayer({
           height: '1',
           width: '1',
           playerVars: {
-            autoplay: autoplay && !isMobile ? 1 : 0, // Don't autoplay on mobile
+            autoplay: 0, // Never autoplay initially, we'll control this manually
             controls: 0,
             disablekb: 1,
             fs: 0,
@@ -143,7 +224,7 @@ export function useYouTubePlayer({
         console.error("Error initializing player for video:", videoId, error);
       }
     }
-  }, [isAPIReady, videoId, startTime, autoplay, handlePlayerReady, handleStateChange, playerId, isMobile]);
+  }, [isAPIReady, videoId, startTime, handlePlayerReady, handleStateChange, playerId]);
 
   return {
     playerRef,
