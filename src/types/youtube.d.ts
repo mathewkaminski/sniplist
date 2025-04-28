@@ -7,6 +7,7 @@ declare namespace YT {
     getDuration(): number;
     seekTo(seconds: number, allowSeekAhead: boolean): void;
     destroy(): void;
+    getPlayerState(): PlayerState;
   }
 
   enum PlayerState {
