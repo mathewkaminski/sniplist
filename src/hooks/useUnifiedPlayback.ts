@@ -33,7 +33,10 @@ export function useUnifiedPlayback({
   const forcePlayAttemptedRef = useRef(false);
   const playerStateTimerId = useRef<number | null>(null);
   const isEndHandledRef = useRef(false);
-
+  const playerReadyTimerRef = useRef<number | null>(null);
+  const recoveryAttempts = useRef(0);
+  const lastPlayRequestTime = useRef<number | null>(null);
+  
   // Report ended event
   const handleEnded = useCallback(() => {
     if (isEndHandledRef.current) return;
@@ -55,11 +58,34 @@ export function useUnifiedPlayback({
       playerStateTimerId.current = null;
     }
     
+    if (playerReadyTimerRef.current) {
+      window.clearTimeout(playerReadyTimerRef.current);
+      playerReadyTimerRef.current = null;
+    }
+    
     if (mobileAdapterRef.current) {
       mobileAdapterRef.current.destroy();
       mobileAdapterRef.current = null;
     }
+    
+    playAttemptedRef.current = false;
+    forcePlayAttemptedRef.current = false;
+    recoveryAttempts.current = 0;
   }, []);
+
+  // Reset state when player or video changes
+  useEffect(() => {
+    cleanup();
+    setIsPlaying(false);
+    setIsActuallyPlaying(false);
+    setIsBuffering(false);
+    playAttemptedRef.current = false;
+    forcePlayAttemptedRef.current = false;
+    isEndHandledRef.current = false;
+    recoveryAttempts.current = 0;
+    
+    return cleanup;
+  }, [videoId, cleanup]);
 
   // Initialize or update mobile adapter when player or time boundaries change
   useEffect(() => {
@@ -114,6 +140,37 @@ export function useUnifiedPlayback({
           console.log("YouTube reported ENDED state");
           handleEnded();
         }
+        
+        // Auto-recovery for stalled playback on mobile
+        if (isMobile && isPlaying && !isActuallyPlaying && !isBuffering && 
+            playerState !== YT.PlayerState.PLAYING && 
+            playerState !== YT.PlayerState.BUFFERING) {
+          
+          if (lastPlayRequestTime.current && 
+              Date.now() - lastPlayRequestTime.current > 3000 && 
+              recoveryAttempts.current < 3) {
+            
+            recoveryAttempts.current++;
+            console.log(`Auto-recovery attempt ${recoveryAttempts.current}/3 for stalled playback`);
+            
+            if (mobileAdapterRef.current) {
+              const success = mobileAdapterRef.current.play();
+              console.log("Mobile adapter recovery attempt:", success);
+            } else {
+              player.seekTo(startTime, true);
+              setTimeout(() => {
+                try {
+                  player.playVideo();
+                } catch (e) {
+                  console.error("Error in recovery play:", e);
+                }
+              }, 300);
+            }
+          }
+        } else if (isActuallyPlaying) {
+          // Reset recovery attempts when successfully playing
+          recoveryAttempts.current = 0;
+        }
       } catch (e) {
         console.error("Error monitoring player state:", e);
       }
@@ -125,7 +182,7 @@ export function useUnifiedPlayback({
         playerStateTimerId.current = null;
       }
     };
-  }, [player, playerReady, isPlaying, endTime, handleEnded, isMobile]);
+  }, [player, playerReady, isPlaying, endTime, handleEnded, isMobile, isActuallyPlaying, isBuffering, startTime]);
 
   // Special handling for forcePlay
   useEffect(() => {
@@ -133,6 +190,7 @@ export function useUnifiedPlayback({
     
     forcePlayAttemptedRef.current = true;
     console.log("Force play triggered");
+    lastPlayRequestTime.current = Date.now();
     
     const playVideo = async () => {
       try {
@@ -174,6 +232,7 @@ export function useUnifiedPlayback({
     
     playAttemptedRef.current = true;
     console.log("Autoplay triggered");
+    lastPlayRequestTime.current = Date.now();
     
     const playVideo = async () => {
       try {
@@ -219,10 +278,27 @@ export function useUnifiedPlayback({
       } else {
         console.log("Starting playback");
         isEndHandledRef.current = false;
+        lastPlayRequestTime.current = Date.now();
+        recoveryAttempts.current = 0;
         
         if (isMobile && mobileAdapterRef.current) {
           const success = await mobileAdapterRef.current.play();
           setIsPlaying(success);
+          
+          if (!success) {
+            // If mobile adapter fails, try direct play as fallback
+            console.log("Mobile adapter failed, trying direct play");
+            player.seekTo(startTime, true);
+            setTimeout(() => {
+              try {
+                player.playVideo();
+                setIsPlaying(true);
+              } catch (e) {
+                console.error("Error in fallback play:", e);
+                toast.error("Couldn't start playback");
+              }
+            }, 300);
+          }
         } else {
           player.seekTo(startTime, true);
           player.playVideo();
@@ -235,9 +311,26 @@ export function useUnifiedPlayback({
     }
   }, [isPlaying, player, playerReady, startTime, isMobile]);
 
-  // Update player ready state
+  // Update player ready state with a delay to ensure player is actually ready
   const setPlayerReadyState = useCallback((ready: boolean) => {
-    setPlayerReady(ready);
+    if (ready) {
+      // Add a short delay before marking as ready to ensure player is fully initialized
+      if (playerReadyTimerRef.current) {
+        window.clearTimeout(playerReadyTimerRef.current);
+      }
+      
+      playerReadyTimerRef.current = window.setTimeout(() => {
+        setPlayerReady(true);
+        playerReadyTimerRef.current = null;
+      }, 500);
+    } else {
+      setPlayerReady(false);
+      
+      if (playerReadyTimerRef.current) {
+        window.clearTimeout(playerReadyTimerRef.current);
+        playerReadyTimerRef.current = null;
+      }
+    }
   }, []);
 
   return {

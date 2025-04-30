@@ -8,9 +8,11 @@ export class MobileYouTubeAdapter {
   private endTime: number;
   private isPlaying: boolean = false;
   private retryAttempts: number = 0;
-  private maxRetries: number = 5;
+  private maxRetries: number = 8; // Increased from 5 to 8
   private playMonitorInterval: number | null = null;
   private stateCheckInterval: number | null = null;
+  private playStartedAt: number | null = null;
+  private isDestroyed: boolean = false;
   
   constructor(player: YT.Player, startTime: number, endTime: number) {
     this.player = player;
@@ -28,7 +30,7 @@ export class MobileYouTubeAdapter {
     // Check player state frequently on mobile
     this.stateCheckInterval = window.setInterval(() => {
       try {
-        if (!this.player) return;
+        if (this.isDestroyed || !this.player) return;
         
         const currentTime = this.player.getCurrentTime();
         const playerState = this.player.getPlayerState();
@@ -37,7 +39,7 @@ export class MobileYouTubeAdapter {
         console.log(`Mobile monitor: time=${currentTime.toFixed(2)}, state=${playerState}, playing=${this.isPlaying}`);
         
         // Check if we've reached the end
-        if (currentTime >= this.endTime - 0.15) {
+        if (this.isPlaying && currentTime >= this.endTime - 0.15) {
           console.log("Mobile adapter: Reached end time, stopping playback");
           this.stop();
         }
@@ -46,6 +48,15 @@ export class MobileYouTubeAdapter {
         if (this.isPlaying && playerState !== YT.PlayerState.PLAYING && 
             playerState !== YT.PlayerState.BUFFERING) {
           this.recoverPlayback();
+        }
+        
+        // Handle case where video is reported as playing but time isn't advancing
+        if (this.isPlaying && this.playStartedAt && playerState === YT.PlayerState.PLAYING) {
+          const timeSinceStart = Date.now() - this.playStartedAt;
+          if (timeSinceStart > 3000 && currentTime < this.startTime + 0.5) {
+            console.log("Mobile adapter: Playback seems stuck at beginning");
+            this.recoverPlayback(true); // Force recovery
+          }
         }
       } catch (e) {
         console.error("Error in mobile state monitoring:", e);
@@ -56,6 +67,11 @@ export class MobileYouTubeAdapter {
   // Play video with enhanced mobile retry logic
   public play(): Promise<boolean> {
     return new Promise((resolve) => {
+      if (this.isDestroyed) {
+        resolve(false);
+        return;
+      }
+      
       this.isPlaying = true;
       this.retryAttempts = 0;
       
@@ -66,18 +82,34 @@ export class MobileYouTubeAdapter {
   
   // Enhanced seek + play with retries specifically for mobile
   private seekAndPlay(resolve: (success: boolean) => void) {
+    if (this.isDestroyed) {
+      resolve(false);
+      return;
+    }
+    
     try {
       // First seek to the start time
       this.player.seekTo(this.startTime, true);
       
       // Give the player a moment to seek
       setTimeout(() => {
+        if (this.isDestroyed) {
+          resolve(false);
+          return;
+        }
+        
         try {
           // Then try to play
           this.player.playVideo();
+          this.playStartedAt = Date.now();
           
           // Check if playback actually started
           setTimeout(() => {
+            if (this.isDestroyed) {
+              resolve(false);
+              return;
+            }
+            
             try {
               const playerState = this.player.getPlayerState();
               
@@ -92,12 +124,12 @@ export class MobileYouTubeAdapter {
               console.error("Error in play verification:", e);
               this.handlePlaybackFailure(resolve);
             }
-          }, 500);
+          }, 800); // Increased from 500ms to 800ms
         } catch (e) {
           console.error("Error playing video:", e);
           this.handlePlaybackFailure(resolve);
         }
-      }, 200);
+      }, 300); // Increased from 200ms to 300ms
     } catch (e) {
       console.error("Error seeking video:", e);
       this.handlePlaybackFailure(resolve);
@@ -106,6 +138,11 @@ export class MobileYouTubeAdapter {
   
   // Handle failure with retry logic
   private handlePlaybackFailure(resolve: (success: boolean) => void) {
+    if (this.isDestroyed) {
+      resolve(false);
+      return;
+    }
+    
     this.retryAttempts++;
     
     if (this.retryAttempts <= this.maxRetries) {
@@ -114,7 +151,11 @@ export class MobileYouTubeAdapter {
       const delay = Math.min(200 * Math.pow(1.5, this.retryAttempts), 3000);
       
       setTimeout(() => {
-        this.seekAndPlay(resolve);
+        if (!this.isDestroyed) {
+          this.seekAndPlay(resolve);
+        } else {
+          resolve(false);
+        }
       }, delay);
     } else {
       console.log("Mobile adapter: Max retries reached, giving up");
@@ -125,14 +166,27 @@ export class MobileYouTubeAdapter {
   }
   
   // Recover stalled playback
-  private recoverPlayback() {
+  private recoverPlayback(force: boolean = false) {
+    if (this.isDestroyed) return;
+    
     try {
       console.log("Mobile adapter: Attempting to recover stalled playback");
       const currentTime = this.player.getCurrentTime();
       
       // Only recover if we're not at the end
-      if (currentTime < this.endTime - 0.5) {
-        this.player.playVideo();
+      if (currentTime < this.endTime - 0.5 || force) {
+        // If we're far from where we should be, seek again
+        if (Math.abs(currentTime - this.startTime) > 5 || force) {
+          this.player.seekTo(this.startTime, true);
+          setTimeout(() => {
+            if (!this.isDestroyed) {
+              this.player.playVideo();
+              this.playStartedAt = Date.now();
+            }
+          }, 200);
+        } else {
+          this.player.playVideo();
+        }
       }
     } catch (e) {
       console.error("Error in playback recovery:", e);
@@ -141,13 +195,15 @@ export class MobileYouTubeAdapter {
   
   // Start continuous playback monitoring
   private startPlaybackMonitoring() {
+    if (this.isDestroyed) return;
+    
     if (this.playMonitorInterval) {
       window.clearInterval(this.playMonitorInterval);
     }
     
     this.playMonitorInterval = window.setInterval(() => {
       try {
-        if (!this.isPlaying || !this.player) {
+        if (!this.isPlaying || this.isDestroyed || !this.player) {
           this.stopPlaybackMonitoring();
           return;
         }
@@ -177,7 +233,9 @@ export class MobileYouTubeAdapter {
   public pause() {
     try {
       this.isPlaying = false;
-      this.player.pauseVideo();
+      if (!this.isDestroyed && this.player) {
+        this.player.pauseVideo();
+      }
       this.stopPlaybackMonitoring();
       console.log("Mobile adapter: Playback paused");
     } catch (e) {
@@ -189,7 +247,9 @@ export class MobileYouTubeAdapter {
   public stop() {
     try {
       this.isPlaying = false;
-      this.player.pauseVideo();
+      if (!this.isDestroyed && this.player) {
+        this.player.pauseVideo();
+      }
       this.stopPlaybackMonitoring();
       console.log("Mobile adapter: Playback stopped");
     } catch (e) {
@@ -199,6 +259,7 @@ export class MobileYouTubeAdapter {
   
   // Clean up resources
   public destroy() {
+    this.isDestroyed = true;
     this.isPlaying = false;
     this.stopPlaybackMonitoring();
     
