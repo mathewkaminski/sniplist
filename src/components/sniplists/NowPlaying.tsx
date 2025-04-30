@@ -1,3 +1,4 @@
+
 import { ListMusic, ExternalLink } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export function NowPlaying({
   const playerReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const readyForMainButtonControl = useRef(false);
   const initializationAttemptedRef = useRef(false);
+  const snippetTransitionRef = useRef(false);
 
   // Track playlist progress
   useEffect(() => {
@@ -59,13 +61,25 @@ export function NowPlaying({
     }
   }, [currentSnippetIndex, currentSnippet]);
 
+  // Auto-start the first snippet when opening the player
+  useEffect(() => {
+    if (!snippets.length) return;
+    
+    console.log("NowPlaying component mounted, should auto-start first snippet");
+    setTimeout(() => {
+      if (!isCurrentSnippetPlaying) {
+        handleMainPlayPause();
+      }
+    }, 1000);
+  }, []);
+
   // Reset player state when snippet changes
   useEffect(() => {
     console.log(`NowPlaying: Switching to snippet ${currentSnippetIndex + 1}/${snippets.length}`);
     setPlayerReady(false);
-    setForcePlay(false);
     readyForMainButtonControl.current = false;
     initializationAttemptedRef.current = false;
+    snippetTransitionRef.current = true;
     
     // Clear any existing timeout
     if (playerReadyTimeoutRef.current) {
@@ -81,9 +95,16 @@ export function NowPlaying({
       if (lastPlayState && !initializationAttemptedRef.current) {
         initializationAttemptedRef.current = true;
         console.log("Auto-resuming playback for next snippet");
-        handleMobilePlay();
+        
+        // Immediate play for non-mobile, force play for mobile
+        if (isMobile) {
+          setForcePlay(true);
+          setTimeout(() => setForcePlay(false), 1500);
+        }
+        
+        setSnippetPlayingStatus(true);
       }
-    }, 1200);
+    }, 800);
     
     return () => {
       if (playerReadyTimeoutRef.current) {
@@ -91,13 +112,18 @@ export function NowPlaying({
         playerReadyTimeoutRef.current = null;
       }
     };
-  }, [currentSnippet, currentSnippetIndex, snippets.length, lastPlayState]);
+  }, [currentSnippet, currentSnippetIndex, snippets.length, lastPlayState, setSnippetPlayingStatus, isMobile]);
 
   // Handle play state changes
   const handlePlayStateChange = (isPlaying: boolean) => {
     console.log("Play state changed:", isPlaying);
     setLastPlayState(isPlaying);
     setSnippetPlayingStatus(isPlaying);
+    
+    // If we're in a transition and the snippet started playing, clear transition flag
+    if (isPlaying && snippetTransitionRef.current) {
+      snippetTransitionRef.current = false;
+    }
   };
 
   // Special handling for mobile play
@@ -140,11 +166,19 @@ export function NowPlaying({
     setPlaylistComplete(false);
     
     // Queue play for mobile if it was playing before
-    if (isMobile && wasPlaying) {
+    if (wasPlaying) {
       console.log("Preparing to auto-play new selection");
       // Short delay to ensure component updates first
-      setTimeout(handleMobilePlay, 300);
+      setTimeout(() => {
+        handleMobilePlay();
+      }, 300);
     }
+  };
+  
+  // Handle when a snippet ends
+  const handleSnippetEnded = () => {
+    console.log("Snippet ended naturally, advancing to next");
+    onSnippetEnd();
   };
 
   if (!currentSnippet) {
@@ -211,10 +245,10 @@ export function NowPlaying({
                 videoId={currentSnippet.video_id}
                 startTime={currentSnippet.start_time}
                 endTime={currentSnippet.end_time}
-                autoplay={!isMobile} // Don't autoplay on mobile
-                onEnded={onSnippetEnd}
+                autoplay={!isMobile} // Don't autoplay on mobile through this prop
+                onEnded={handleSnippetEnded}
                 onPlayStateChange={handlePlayStateChange}
-                forcePlay={forcePlay}
+                forcePlay={forcePlay || (!isMobile && isCurrentSnippetPlaying)}
               />
               <div className="ml-4 flex-1">
                 <p className="text-lg font-medium line-clamp-1">

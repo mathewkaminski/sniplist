@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Snippet } from "@/components/sniplists/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 export function usePlaylistControl(snippets: Snippet[]) {
   const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
@@ -9,6 +10,7 @@ export function usePlaylistControl(snippets: Snippet[]) {
   const isMobile = useIsMobile();
   const snippetTimer = useRef<NodeJS.Timeout | null>(null);
   const lastSnippetEndedAt = useRef<number | null>(null);
+  const autoAdvanceEnabled = useRef(true);
 
   // Clean up on unmount
   useEffect(() => {
@@ -73,8 +75,8 @@ export function usePlaylistControl(snippets: Snippet[]) {
     if (currentSnippetIndex < snippets.length - 1) {
       setCurrentSnippetIndex(prevIndex => prevIndex + 1);
       
-      // Keep playing when advancing automatically
-      if (source !== "user-selection") {
+      // Always keep playing when advancing automatically
+      if (autoAdvanceEnabled.current) {
         setIsCurrentSnippetPlaying(true);
       }
     } else {
@@ -99,13 +101,16 @@ export function usePlaylistControl(snippets: Snippet[]) {
   const handleRestartPlaylist = () => {
     setCurrentSnippetIndex(0);
     setPlaylistComplete(false);
-    setIsCurrentSnippetPlaying(false);
+    setIsCurrentSnippetPlaying(true); // Auto-play from the start
     lastSnippetEndedAt.current = null;
     
     if (snippetTimer.current) {
       clearTimeout(snippetTimer.current);
       snippetTimer.current = null;
     }
+    
+    // Show a toast message
+    toast.success("Restarting playlist");
   };
 
   // Update playing status

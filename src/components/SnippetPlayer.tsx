@@ -36,6 +36,8 @@ export function SnippetPlayer({
   const [isActuallyPlaying, setIsActuallyPlaying] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const playerInitialized = useRef(false);
+  const autoplayAttempted = useRef(false);
+  const forcePlayAttempted = useRef(false);
   const retryAttemptsRef = useRef(0);
   const maxRetryAttempts = 3;
   
@@ -100,10 +102,12 @@ export function SnippetPlayer({
             },
             events: {
               onReady: (event) => {
-                console.log("YouTube player ready");
+                console.log("YouTube player ready for video:", videoId);
                 playerInstance.current = event.target;
                 setPlayerReady(true);
                 retryAttemptsRef.current = 0;
+                autoplayAttempted.current = false;
+                forcePlayAttempted.current = false;
                 
                 // If autoplay or forcePlay is enabled, attempt to play
                 if ((autoplay && !isMobile) || forcePlay) {
@@ -130,6 +134,38 @@ export function SnippetPlayer({
     
     initializePlayer();
   }, [isAPIReady, videoId, startTime, playerId, autoplay, forcePlay, isMobile]);
+
+  // Handle forcePlay prop changes
+  useEffect(() => {
+    if (forcePlay && playerReady && !forcePlayAttempted.current) {
+      console.log("Force play triggered for:", videoId);
+      forcePlayAttempted.current = true;
+      tryToPlay();
+    }
+    
+    // Reset flag when forcePlay becomes false
+    if (!forcePlay) {
+      forcePlayAttempted.current = false;
+    }
+  }, [forcePlay, playerReady, videoId]);
+
+  // Handle autoplay
+  useEffect(() => {
+    if (autoplay && playerReady && !autoplayAttempted.current) {
+      console.log("Autoplay triggered for:", videoId);
+      autoplayAttempted.current = true;
+      
+      // Skip autoplay on mobile unless forcePlay is true
+      if (isMobile && !forcePlay) {
+        console.log("Skipping autoplay on mobile without forcePlay");
+        return;
+      }
+      
+      setTimeout(() => {
+        tryToPlay();
+      }, 300);
+    }
+  }, [autoplay, playerReady, videoId, isMobile, forcePlay]);
 
   // Set up monitoring interval when playing
   useEffect(() => {
@@ -197,17 +233,10 @@ export function SnippetPlayer({
       onPlayStateChange(isPlaying);
     }
   }, [isPlaying, onPlayStateChange]);
-  
-  // Handle force play prop changes
-  useEffect(() => {
-    if (forcePlay && playerReady && !isPlaying) {
-      tryToPlay();
-    }
-  }, [forcePlay, playerReady, isPlaying]);
 
   // Handle player state changes
   const handlePlayerStateChange = (state: YT.PlayerState) => {
-    console.log("YouTube state changed:", state);
+    console.log("YouTube state changed:", state, "for video:", videoId);
     
     switch (state) {
       case YT.PlayerState.PLAYING:
@@ -226,7 +255,7 @@ export function SnippetPlayer({
     
     // Check if this was the end of the video
     if (state === YT.PlayerState.ENDED && isPlaying) {
-      console.log("Video ended naturally");
+      console.log("Video ended naturally for:", videoId);
       setIsPlaying(false);
       
       if (onEnded) {
@@ -247,7 +276,7 @@ export function SnippetPlayer({
       setTimeout(() => {
         if (playerRef.current) {
           // Clean up existing player
-          while (playerRef.current.firstChild) {
+          while (playerRef.current && playerRef.current.firstChild) {
             playerRef.current.removeChild(playerRef.current.firstChild);
           }
           
@@ -264,6 +293,7 @@ export function SnippetPlayer({
   // Try to play the video with error handling
   const tryToPlay = () => {
     if (!playerInstance.current || !playerReady) {
+      console.log("Cannot play: player not ready");
       return false;
     }
     
@@ -273,31 +303,34 @@ export function SnippetPlayer({
       
       // Add a small delay after seeking
       setTimeout(() => {
-        if (playerInstance.current) {
+        if (!playerInstance.current) return;
+        
+        try {
           playerInstance.current.playVideo();
           setIsPlaying(true);
           
           // For mobile: check if playback actually started
           if (isMobile) {
             setTimeout(() => {
-              if (playerInstance.current) {
-                const playerState = playerInstance.current.getPlayerState();
-                
-                if (playerState !== YT.PlayerState.PLAYING && 
-                    playerState !== YT.PlayerState.BUFFERING) {
-                  console.log("Play attempt failed, retrying...");
-                  playerInstance.current.playVideo();
-                }
+              if (!playerInstance.current) return;
+              
+              const playerState = playerInstance.current.getPlayerState();
+              if (playerState !== YT.PlayerState.PLAYING && 
+                  playerState !== YT.PlayerState.BUFFERING) {
+                console.log("Play attempt failed, retrying...");
+                playerInstance.current.playVideo();
               }
             }, 500);
           }
+        } catch (playError) {
+          console.error("Error during play attempt:", playError);
+          return false;
         }
       }, 100);
       
       return true;
     } catch (e) {
       console.error("Error playing video:", e);
-      toast.error("Playback failed. Please try again.");
       return false;
     }
   };

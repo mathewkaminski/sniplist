@@ -1,6 +1,6 @@
 
 import { SniplistPlayerProps } from "./types";
-import { useSniplistPlayback } from "@/hooks/useSniplistPlayback";
+import { useSniplistPlayback } from "@/hooks/sniplists/useSniplistPlayback";
 import { PlayerLoadingState } from "./PlayerLoadingState";
 import { PlayerEmptyState } from "./PlayerEmptyState";
 import { PlaylistComplete } from "./PlaylistComplete";
@@ -25,15 +25,16 @@ export function SniplistPlayer({ sniplistId, onClose }: SniplistPlayerProps) {
   const isMobile = useIsMobile();
   const initializedRef = useRef(false);
 
-  // Handle first-time opening of player on mobile
+  // Handle first-time opening of player - auto-play the first snippet
   useEffect(() => {
     if (!loading && snippets.length > 0 && !initializedRef.current) {
       initializedRef.current = true;
+      console.log("Sniplist player initialized, auto-starting playback");
       
-      // Don't auto-start on mobile - user needs to click play first
-      if (!isMobile) {
+      // Short delay to ensure everything is loaded
+      setTimeout(() => {
         setSnippetPlayingStatus(true);
-      }
+      }, isMobile ? 1500 : 800);
     }
   }, [loading, snippets, isMobile, setSnippetPlayingStatus]);
 

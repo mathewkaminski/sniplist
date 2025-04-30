@@ -18,6 +18,7 @@ export function useYouTubeAPI() {
     if (!checkIntervalRef.current) {
       checkIntervalRef.current = window.setInterval(() => {
         if (window.YT && window.YT.Player) {
+          console.log("YouTube API detected as ready");
           setIsAPIReady(true);
           if (checkIntervalRef.current) {
             window.clearInterval(checkIntervalRef.current);
@@ -30,14 +31,17 @@ export function useYouTubeAPI() {
     // Load the API if not already loading
     if (!apiLoadedRef.current && !apiLoadAttemptedRef.current) {
       apiLoadAttemptedRef.current = true;
-      apiLoadedRef.current = true;
+      console.log("Attempting to load YouTube API");
 
       // Save the original callback if it exists
       const originalCallback = window.onYouTubeIframeAPIReady;
 
       // Set up our callback to run after the API loads
       window.onYouTubeIframeAPIReady = () => {
+        console.log("YouTube API ready event fired");
         setIsAPIReady(true);
+        apiLoadedRef.current = true;
+        
         // Call the original callback if it existed
         if (typeof originalCallback === 'function') {
           originalCallback();
