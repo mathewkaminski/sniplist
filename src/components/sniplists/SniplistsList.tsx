@@ -20,10 +20,12 @@ export function SniplistsList({ sniplists, loading, onDelete }: SniplistsListPro
   const [playingSniplistId, setPlayingSniplistId] = useState<string | null>(null);
   
   const handlePlay = (sniplistId: string) => {
+    console.log("Opening sniplist player for:", sniplistId);
     setPlayingSniplistId(sniplistId);
   };
   
   const handleClose = () => {
+    console.log("Closing sniplist player");
     setPlayingSniplistId(null);
   };
 

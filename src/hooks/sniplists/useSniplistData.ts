@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { fetchVideoData } from "@/utils/youtube";
@@ -8,6 +8,14 @@ import { Snippet } from "@/components/sniplists/types";
 export function useSniplistData(sniplistId: string) {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Automatically fetch snippets when the component mounts or sniplistId changes
+  useEffect(() => {
+    if (sniplistId) {
+      console.log("🎵 Sniplist ID changed, fetching snippets for:", sniplistId);
+      fetchSniplistItems();
+    }
+  }, [sniplistId]);
 
   const fetchSniplistItems = async () => {
     try {
