@@ -1,8 +1,9 @@
 
-import { useYouTubePlayer } from "@/hooks/useYouTubePlayer";
+import { useYouTubeAPI } from "@/hooks/useYouTubeAPI";
 import { PlayerButton } from "./PlayerButton";
 import { useEffect, useRef, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUnifiedPlayback } from "@/hooks/useUnifiedPlayback";
 
 interface SnippetPlayerProps {
   videoId: string;
@@ -26,20 +27,31 @@ export function SnippetPlayer({
   forcePlay = false
 }: SnippetPlayerProps) {
   const isMobile = useIsMobile();
-  const manualPlayAttempted = useRef(false);
+  const playerRef = useRef<HTMLDivElement>(null);
+  const playerInstance = useRef<YT.Player | null>(null);
+  const playerId = `youtube-player-${videoId}-${startTime}-${Math.random().toString(36).substring(2, 9)}`;
+  const playerInitialized = useRef(false);
   const [isPendingPlay, setIsPendingPlay] = useState(false);
   
+  // Load YouTube API
+  const { isAPIReady } = useYouTubeAPI();
+  
+  // Initialize unified playback system
   const {
-    playerRef,
     isPlaying,
+    isActuallyPlaying,
+    isBuffering,
     playerReady,
-    togglePlayPause
-  } = useYouTubePlayer({
+    togglePlayPause,
+    setPlayerReadyState,
+    cleanup
+  } = useUnifiedPlayback({
+    player: playerInstance.current,
     videoId,
     startTime,
     endTime,
-    autoplay: isMobile ? false : autoplay, // Don't autoplay on mobile by default
     onEnded,
+    autoplay: isMobile ? false : autoplay, // Don't autoplay on mobile by default
     forcePlay: forcePlay || isPendingPlay
   });
 
@@ -50,18 +62,65 @@ export function SnippetPlayer({
     }
   }, [isPlaying, onPlayStateChange]);
 
-  // Handle pending play request (e.g., from parent component)
+  // Handle player initialization
   useEffect(() => {
-    if (forcePlay && playerReady && !isPlaying) {
-      console.log("SnippetPlayer: Force play received, attempting to play");
-      togglePlayPause();
-      setIsPendingPlay(false);
+    if (isAPIReady && !playerInitialized.current && playerRef.current) {
+      try {
+        playerInitialized.current = true;
+        console.log("Setting up player for video:", videoId);
+
+        const div = document.createElement('div');
+        div.id = playerId;
+        playerRef.current.appendChild(div);
+
+        const newPlayer = new window.YT.Player(playerId, {
+          videoId: videoId,
+          height: '1',
+          width: '1',
+          playerVars: {
+            autoplay: 0, // Never autoplay initially, we'll control this manually
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1, // Important for mobile playback
+            start: Math.floor(startTime)
+          },
+          events: {
+            onReady: () => {
+              console.log("YouTube player ready");
+              playerInstance.current = newPlayer;
+              setPlayerReadyState(true);
+            },
+            onStateChange: (event) => {
+              console.log("YouTube state changed:", event.data);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error initializing player for video:", videoId, error);
+      }
     }
-  }, [forcePlay, playerReady, isPlaying, togglePlayPause]);
+    
+    // Clean up on unmount
+    return () => {
+      cleanup();
+      playerInitialized.current = false;
+      if (playerInstance.current) {
+        try {
+          playerInstance.current.destroy();
+        } catch (e) {
+          console.error("Error destroying player:", e);
+        }
+        playerInstance.current = null;
+      }
+    };
+  }, [isAPIReady, videoId, startTime, playerId, setPlayerReadyState, cleanup]);
 
   // Enhanced toggle function for mobile
   const handleTogglePlay = () => {
-    manualPlayAttempted.current = true;
+    console.log("Toggle button clicked");
     
     // If player isn't ready yet, mark we want to play as soon as it's ready
     if (!playerReady) {
@@ -82,6 +141,8 @@ export function SnippetPlayer({
         playerReady={playerReady}
         onToggle={handleTogglePlay}
         size={size}
+        isBuffering={isBuffering}
+        isActuallyPlaying={isActuallyPlaying}
       />
     </div>
   );

@@ -1,4 +1,3 @@
-
 import { ListMusic, ExternalLink } from "lucide-react";
 import { SnippetPlayer } from "@/components/SnippetPlayer";
 import { Button } from "@/components/ui/button";
@@ -36,9 +35,12 @@ export function NowPlaying({
   const isMobile = useIsMobile();
   const [playerReady, setPlayerReady] = useState(false);
   const [forcePlay, setForcePlay] = useState(false);
+  const [lastPlayState, setLastPlayState] = useState(false);
   const playerReadyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const readyForMainButtonControl = useRef(false);
+  const initializationAttemptedRef = useRef(false);
 
+  // Track playlist progress
   useEffect(() => {
     // Track playlist progress when completed songs >= 2
     if (currentSnippetIndex >= 2 && currentSnippet?.sniplist_id) {
@@ -57,22 +59,31 @@ export function NowPlaying({
     }
   }, [currentSnippetIndex, currentSnippet]);
 
+  // Reset player state when snippet changes
   useEffect(() => {
-    console.log(`NowPlaying rendering snippet ${currentSnippetIndex + 1}/${snippets.length}:`, currentSnippet);
+    console.log(`NowPlaying: Switching to snippet ${currentSnippetIndex + 1}/${snippets.length}`);
     setPlayerReady(false);
     setForcePlay(false);
     readyForMainButtonControl.current = false;
+    initializationAttemptedRef.current = false;
     
     // Clear any existing timeout
     if (playerReadyTimeoutRef.current) {
       clearTimeout(playerReadyTimeoutRef.current);
     }
     
-    // Give a moment for the player to initialize
+    // Mark player as ready after a delay
     playerReadyTimeoutRef.current = setTimeout(() => {
       setPlayerReady(true);
       readyForMainButtonControl.current = true;
-    }, 1000);
+      
+      // Auto-resume playback if it was playing before
+      if (lastPlayState && !initializationAttemptedRef.current) {
+        initializationAttemptedRef.current = true;
+        console.log("Auto-resuming playback for next snippet");
+        handleMobilePlay();
+      }
+    }, 1200);
     
     return () => {
       if (playerReadyTimeoutRef.current) {
@@ -80,9 +91,32 @@ export function NowPlaying({
         playerReadyTimeoutRef.current = null;
       }
     };
-  }, [currentSnippet, currentSnippetIndex, snippets.length]);
+  }, [currentSnippet, currentSnippetIndex, snippets.length, lastPlayState]);
 
-  // Main playlist play/pause toggle - enhanced for mobile
+  // Handle play state changes
+  const handlePlayStateChange = (isPlaying: boolean) => {
+    console.log("Play state changed:", isPlaying);
+    setLastPlayState(isPlaying);
+    setSnippetPlayingStatus(isPlaying);
+  };
+
+  // Special handling for mobile play
+  const handleMobilePlay = () => {
+    if (isMobile) {
+      console.log("Mobile play requested, forcing play");
+      setForcePlay(true);
+      setSnippetPlayingStatus(true);
+      
+      // Reset force play flag after a delay
+      setTimeout(() => {
+        setForcePlay(false);
+      }, 1500);
+    } else {
+      setSnippetPlayingStatus(!isCurrentSnippetPlaying);
+    }
+  };
+
+  // Main playlist play/pause toggle
   const handleMainPlayPause = () => {
     if (!readyForMainButtonControl.current) {
       console.log("Player not fully initialized yet, waiting...");
@@ -90,16 +124,26 @@ export function NowPlaying({
     }
     
     if (isMobile && !isCurrentSnippetPlaying) {
-      console.log("Mobile main button play requested, forcing play");
-      setForcePlay(true);
-      setSnippetPlayingStatus(true);
-      
-      // Reset force play flag after a delay
-      setTimeout(() => {
-        setForcePlay(false);
-      }, 1000);
+      handleMobilePlay();
     } else {
       setSnippetPlayingStatus(!isCurrentSnippetPlaying);
+    }
+  };
+  
+  // Handle snippet selection 
+  const handleSnippetSelect = (index: number) => {
+    // Keep track of play state to auto-resume
+    const wasPlaying = isCurrentSnippetPlaying;
+    
+    // Update selected snippet
+    onSnippetSelect(index);
+    setPlaylistComplete(false);
+    
+    // Queue play for mobile if it was playing before
+    if (isMobile && wasPlaying) {
+      console.log("Preparing to auto-play new selection");
+      // Short delay to ensure component updates first
+      setTimeout(handleMobilePlay, 300);
     }
   };
 
@@ -169,7 +213,7 @@ export function NowPlaying({
                 endTime={currentSnippet.end_time}
                 autoplay={!isMobile} // Don't autoplay on mobile
                 onEnded={onSnippetEnd}
-                onPlayStateChange={setSnippetPlayingStatus}
+                onPlayStateChange={handlePlayStateChange}
                 forcePlay={forcePlay}
               />
               <div className="ml-4 flex-1">
@@ -188,24 +232,7 @@ export function NowPlaying({
           <SnippetList
             snippets={snippets}
             currentSnippetIndex={currentSnippetIndex}
-            onSnippetSelect={(index) => {
-              onSnippetSelect(index);
-              setPlaylistComplete(false);
-              
-              // On mobile, we want to start playing immediately when a snippet is selected
-              if (isMobile) {
-                console.log("Mobile: snippet selected, will try to autoplay");
-                // Using a slightly longer delay to ensure component gets updated
-                setTimeout(() => {
-                  setForcePlay(true);
-                  setSnippetPlayingStatus(true);
-                  
-                  setTimeout(() => {
-                    setForcePlay(false);
-                  }, 1000);
-                }, 300);
-              }
-            }}
+            onSnippetSelect={handleSnippetSelect}
           />
         </div>
       </div>
