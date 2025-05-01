@@ -1,53 +1,76 @@
-
-import { useEffect, useRef } from "react";
-import { useSniplistData } from "./useSniplistData";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Snippet } from "@/types";
 import { usePlaylistControl } from "./usePlaylistControl";
 
 export const useSniplistPlayback = (sniplistId: string) => {
-  const { snippets, loading, fetchSniplistItems } = useSniplistData(sniplistId);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentSnippetIndex, setCurrentSnippetIndex] = useState(0);
+  const [playlistComplete, setPlaylistComplete] = useState(false);
+  const [isCurrentSnippetPlaying, setIsCurrentSnippetPlaying] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
   const {
-    currentSnippetIndex,
-    playlistComplete,
-    isCurrentSnippetPlaying,
-    setCurrentSnippetIndex,
+    currentSnippetIndex: playlistCurrentSnippetIndex,
+    playlistComplete: playlistCompleteState,
+    isCurrentSnippetPlaying: playlistIsCurrentSnippetPlaying,
+    setCurrentSnippetIndex: setPlaylistCurrentSnippetIndex,
     handleSnippetEnd,
     handleRestartPlaylist,
-    setPlaylistComplete,
+    setPlaylistComplete: setPlaylistCompleteState,
     setSnippetPlayingStatus
   } = usePlaylistControl(snippets);
-  const fetchAttempts = useRef(0);
-  const maxFetchAttempts = 3;
 
-  // Try fetching the sniplist data with retries
   useEffect(() => {
-    if (!sniplistId) {
-      console.error("No sniplist ID provided");
-      return;
-    }
-
-    const attemptFetch = async () => {
+    const fetchSnippets = async () => {
       try {
-        console.log(`Fetching sniplist ${sniplistId}, attempt ${fetchAttempts.current + 1}/${maxFetchAttempts}`);
-        await fetchSniplistItems();
-        fetchAttempts.current = 0; // Reset on success
-      } catch (error) {
-        fetchAttempts.current++;
-        console.error(`Error fetching sniplist (attempt ${fetchAttempts.current}/${maxFetchAttempts}):`, error);
-        
-        // Retry with exponential backoff
-        if (fetchAttempts.current < maxFetchAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, fetchAttempts.current - 1), 10000);
-          console.log(`Retrying in ${delay}ms...`);
-          
-          setTimeout(() => {
-            attemptFetch();
-          }, delay);
+        setLoading(true);
+        console.log("Fetching snippets for sniplist:", sniplistId);
+
+        const { data: sniplistItemsData, error: sniplistItemsError } = await supabase
+          .from('sniplist_items')
+          .select(`
+            snippet_id,
+            position,
+            snippets:snippet_id (
+              id,
+              video_id,
+              start_time,
+              end_time,
+              title,
+              comments
+            )
+          `)
+          .eq('sniplist_id', sniplistId)
+          .order('position');
+
+        if (sniplistItemsError) throw sniplistItemsError;
+
+        if (!sniplistItemsData || sniplistItemsData.length === 0) {
+          console.log("No snippets found");
+          setSnippets([]);
+          return;
         }
+
+        const orderedSnippets = sniplistItemsData
+          .map(item => item.snippets)
+          .filter(Boolean) as Snippet[];
+
+        console.log(`Found ${orderedSnippets.length} snippets`);
+        setSnippets(orderedSnippets);
+      } catch (err) {
+        console.error("Error fetching snippets:", err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch snippets'));
+        toast.error("Failed to load snippets");
+      } finally {
+        setLoading(false);
       }
     };
-    
-    attemptFetch();
-  }, [sniplistId, fetchSniplistItems]);
+
+    fetchSnippets();
+  }, [sniplistId]);
 
   return {
     snippets,
