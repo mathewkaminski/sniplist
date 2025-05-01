@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+
 export const extractYouTubeId = (url: string): string | null => {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
@@ -46,6 +48,51 @@ export const fetchVideoData = async (videoId: string): Promise<{ title: string; 
   }
 };
 
-export const getYoutubeVideoUrl = (videoId: string): string => {
+export function getYoutubeVideoUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
-};
+}
+
+export async function createYouTubePlayer(
+  elementId: string,
+  options: YT.PlayerOptions
+): Promise<YT.Player> {
+  return new Promise((resolve, reject) => {
+    try {
+      const player = new YT.Player(elementId, {
+        ...options,
+        events: {
+          ...options.events,
+          onReady: (event) => {
+            options.events?.onReady?.(event);
+            resolve(player);
+          },
+          onError: (event) => {
+            options.events?.onError?.(event);
+            reject(new Error(`YouTube player error: ${event.data}`));
+          },
+        },
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+export function handleYouTubeError(error: YT.OnErrorEvent): void {
+  const errorMessages: Record<number, string> = {
+    2: 'Invalid video parameter',
+    5: 'HTML5 player error',
+    100: 'Video not found',
+    101: 'Embedding not allowed',
+    150: 'Embedding not allowed',
+  };
+
+  const message = errorMessages[error.data] || 'Unknown error occurred';
+  toast.error(message);
+}
