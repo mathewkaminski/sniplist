@@ -1,4 +1,3 @@
-
 import { useYouTubeAPI } from "@/hooks/useYouTubeAPI";
 import { PlayerButton } from "./PlayerButton";
 import { useEffect, useRef, useState } from "react";
@@ -40,6 +39,7 @@ export function SnippetPlayer({
   const forcePlayAttempted = useRef(false);
   const retryAttemptsRef = useRef(0);
   const maxRetryAttempts = 3;
+  const playbackCheckInterval = useRef<number | null>(null);
   
   // Load YouTube API
   const { isAPIReady } = useYouTubeAPI();
@@ -50,6 +50,11 @@ export function SnippetPlayer({
       if (intervalRef.current) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      
+      if (playbackCheckInterval.current) {
+        window.clearInterval(playbackCheckInterval.current);
+        playbackCheckInterval.current = null;
       }
       
       if (playerInstance.current) {
@@ -63,41 +68,25 @@ export function SnippetPlayer({
     };
   }, []);
 
-  // Initialize the player when API is ready
+  // Initialize YouTube player
   useEffect(() => {
-    if (!isAPIReady || !playerRef.current || playerInitialized.current) {
-      return;
-    }
+    if (!isAPIReady || !playerRef.current) return;
     
-    const initializePlayer = () => {
+    const initializePlayer = async () => {
       try {
-        playerInitialized.current = true;
-        console.log("Setting up player for video:", videoId);
-        
-        // Clean up any existing player in the container
-        while (playerRef.current && playerRef.current.firstChild) {
-          playerRef.current.removeChild(playerRef.current.firstChild);
-        }
-        
-        // Create a new container for the player
-        const div = document.createElement('div');
-        div.id = playerId;
-        
-        if (playerRef.current) {
-          playerRef.current.appendChild(div);
-          
-          const newPlayer = new window.YT.Player(playerId, {
+        if (!playerInstance.current) {
+          playerInstance.current = new YT.Player(playerId, {
             videoId: videoId,
             height: '1',
             width: '1',
             playerVars: {
-              autoplay: 0, // Never autoplay initially
+              autoplay: 0,
               controls: 0,
               disablekb: 1,
               fs: 0,
               rel: 0,
               modestbranding: 1,
-              playsinline: 1, // Important for mobile
+              playsinline: 1,
               start: Math.floor(startTime)
             },
             events: {
@@ -114,6 +103,11 @@ export function SnippetPlayer({
                   setTimeout(() => {
                     tryToPlay();
                   }, 300);
+                }
+
+                // Set up playback monitoring for mobile
+                if (isMobile) {
+                  setupMobilePlaybackMonitoring();
                 }
               },
               onStateChange: (event) => {
@@ -135,158 +129,91 @@ export function SnippetPlayer({
     initializePlayer();
   }, [isAPIReady, videoId, startTime, playerId, autoplay, forcePlay, isMobile]);
 
-  // Handle forcePlay prop changes
-  useEffect(() => {
-    if (forcePlay && playerReady && !forcePlayAttempted.current) {
-      console.log("Force play triggered for:", videoId);
-      forcePlayAttempted.current = true;
-      tryToPlay();
+  // Set up mobile playback monitoring
+  const setupMobilePlaybackMonitoring = () => {
+    if (playbackCheckInterval.current) {
+      window.clearInterval(playbackCheckInterval.current);
     }
-    
-    // Reset flag when forcePlay becomes false
-    if (!forcePlay) {
-      forcePlayAttempted.current = false;
-    }
-  }, [forcePlay, playerReady, videoId]);
 
-  // Handle autoplay
-  useEffect(() => {
-    if (autoplay && playerReady && !autoplayAttempted.current) {
-      console.log("Autoplay triggered for:", videoId);
-      autoplayAttempted.current = true;
-      
-      // Skip autoplay on mobile unless forcePlay is true
-      if (isMobile && !forcePlay) {
-        console.log("Skipping autoplay on mobile without forcePlay");
-        return;
-      }
-      
-      setTimeout(() => {
-        tryToPlay();
-      }, 300);
-    }
-  }, [autoplay, playerReady, videoId, isMobile, forcePlay]);
+    playbackCheckInterval.current = window.setInterval(() => {
+      if (!playerInstance.current || !playerReady) return;
 
-  // Set up monitoring interval when playing
-  useEffect(() => {
-    if (!playerReady || !playerInstance.current) return;
-    
-    if (isPlaying) {
-      // Start monitoring playback
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-      }
-      
-      intervalRef.current = window.setInterval(() => {
-        if (!playerInstance.current) return;
-        
-        try {
-          const currentTime = playerInstance.current.getCurrentTime();
-          const playerState = playerInstance.current.getPlayerState();
-          
-          // Update buffering state
-          setIsBuffering(playerState === YT.PlayerState.BUFFERING);
-          
-          // Update actual playing state
-          setIsActuallyPlaying(playerState === YT.PlayerState.PLAYING);
-          
-          // Check if we've reached the end time
-          if (currentTime >= endTime - 0.2) {
-            console.log(`Reached end time: ${currentTime.toFixed(2)} >= ${endTime.toFixed(2)}`);
-            stopPlayback();
-            
-            if (onEnded) {
-              onEnded();
-            }
-          }
-          
-          // For mobile: try to recover stalled playback
-          if (isMobile && playerState !== YT.PlayerState.PLAYING && 
-              playerState !== YT.PlayerState.BUFFERING && 
-              playerState !== YT.PlayerState.PAUSED) {
-            console.log("Detected stalled playback on mobile, attempting recovery");
-            tryToPlay();
-          }
-        } catch (e) {
-          console.error("Error in playback monitoring:", e);
+      try {
+        const playerState = playerInstance.current.getPlayerState();
+        const currentTime = playerInstance.current.getCurrentTime();
+
+        // Check if playback has stalled
+        if (isPlaying && 
+            playerState !== YT.PlayerState.PLAYING && 
+            playerState !== YT.PlayerState.BUFFERING) {
+          console.log("Mobile playback stalled, attempting recovery");
+          tryToPlay();
         }
-      }, isMobile ? 300 : 500);
-    } else {
-      // Stop monitoring when not playing
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-    
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isPlaying, playerReady, endTime, onEnded, isMobile]);
 
-  // Notify parent about play state changes
-  useEffect(() => {
-    if (onPlayStateChange) {
-      onPlayStateChange(isPlaying);
-    }
-  }, [isPlaying, onPlayStateChange]);
+        // Check if we've reached the end time
+        if (currentTime >= endTime - 0.2) {
+          console.log("Reached end time, stopping playback");
+          stopPlayback();
+          onEnded?.();
+        }
+      } catch (e) {
+        console.error("Error in mobile playback monitoring:", e);
+      }
+    }, 500);
+  };
 
   // Handle player state changes
-  const handlePlayerStateChange = (state: YT.PlayerState) => {
-    console.log("YouTube state changed:", state, "for video:", videoId);
+  const handlePlayerStateChange = (state: number) => {
+    console.log("Player state changed:", state);
     
     switch (state) {
       case YT.PlayerState.PLAYING:
-        setIsActuallyPlaying(true);
+        setIsPlaying(true);
         setIsBuffering(false);
+        setIsActuallyPlaying(true);
+        onPlayStateChange?.(true);
         break;
+        
+      case YT.PlayerState.PAUSED:
+        setIsPlaying(false);
+        setIsBuffering(false);
+        setIsActuallyPlaying(false);
+        onPlayStateChange?.(false);
+        break;
+        
       case YT.PlayerState.BUFFERING:
         setIsBuffering(true);
         break;
-      case YT.PlayerState.PAUSED:
+        
       case YT.PlayerState.ENDED:
-        setIsActuallyPlaying(false);
+        stopPlayback();
+        onEnded?.();
+        break;
+        
+      case YT.PlayerState.UNSTARTED:
+        setIsPlaying(false);
         setIsBuffering(false);
+        setIsActuallyPlaying(false);
         break;
     }
-    
-    // Check if this was the end of the video
-    if (state === YT.PlayerState.ENDED && isPlaying) {
-      console.log("Video ended naturally for:", videoId);
-      setIsPlaying(false);
-      
-      if (onEnded) {
-        onEnded();
-      }
-    }
   };
-  
-  // Handle player initialization errors
+
+  // Handle player errors
   const handlePlayerError = () => {
-    retryAttemptsRef.current++;
+    console.error("Player error occurred");
+    setIsPlaying(false);
+    setIsBuffering(false);
+    setIsActuallyPlaying(false);
+    onPlayStateChange?.(false);
     
-    if (retryAttemptsRef.current <= maxRetryAttempts) {
-      console.log(`Player error, retrying (${retryAttemptsRef.current}/${maxRetryAttempts})...`);
-      playerInitialized.current = false;
-      
-      // Short delay before retry
+    if (retryAttemptsRef.current < maxRetryAttempts) {
+      retryAttemptsRef.current++;
+      console.log(`Retrying playback (attempt ${retryAttemptsRef.current}/${maxRetryAttempts})`);
       setTimeout(() => {
-        if (playerRef.current) {
-          // Clean up existing player
-          while (playerRef.current && playerRef.current.firstChild) {
-            playerRef.current.removeChild(playerRef.current.firstChild);
-          }
-          
-          // Reinitialize
-          playerInitialized.current = false;
-        }
+        tryToPlay();
       }, 1000);
     } else {
-      console.error("Failed to initialize player after multiple attempts");
-      toast.error("Could not load video player. Please try again later.");
+      toast.error("Failed to play video after multiple attempts");
     }
   };
 
@@ -342,42 +269,14 @@ export function SnippetPlayer({
     try {
       playerInstance.current.pauseVideo();
       setIsPlaying(false);
+      setIsActuallyPlaying(false);
+      onPlayStateChange?.(false);
     } catch (e) {
       console.error("Error stopping playback:", e);
     }
   };
 
-  // Toggle play/pause
-  const handleTogglePlay = () => {
-    if (!playerReady) {
-      console.log("Player not ready yet");
-      return;
-    }
-    
-    if (isPlaying) {
-      stopPlayback();
-    } else {
-      const success = tryToPlay();
-      
-      if (!success) {
-        toast.error("Playback control failed");
-      }
-    }
-  };
-
   return (
-    <div className="flex items-center gap-2">
-      <div ref={playerRef} className="w-1 h-1 opacity-0">
-        {/* YouTube player will be mounted here */}
-      </div>
-      <PlayerButton 
-        isPlaying={isPlaying}
-        playerReady={playerReady}
-        onToggle={handleTogglePlay}
-        size={size}
-        isBuffering={isBuffering}
-        isActuallyPlaying={isActuallyPlaying}
-      />
-    </div>
+    <div ref={playerRef} id={playerId} className="hidden" />
   );
 }

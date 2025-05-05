@@ -11,6 +11,8 @@ export function usePlaylistControl(snippets: Snippet[]) {
   const snippetTimer = useRef<NodeJS.Timeout | null>(null);
   const lastSnippetEndedAt = useRef<number | null>(null);
   const autoAdvanceEnabled = useRef(true);
+  const playbackAttempts = useRef(0);
+  const maxPlaybackAttempts = 3;
 
   // Clean up on unmount
   useEffect(() => {
@@ -49,7 +51,7 @@ export function usePlaylistControl(snippets: Snippet[]) {
       if (!currentSnippet) return;
       
       const snippetDuration = (currentSnippet.end_time - currentSnippet.start_time) * 1000;
-      const safetyBuffer = isMobile ? 2000 : 1000; // Longer buffer on mobile
+      const safetyBuffer = isMobile ? 3000 : 1500; // Increased buffer for mobile
       
       console.log(`Setting backup timer for snippet ${currentSnippetIndex + 1}, duration: ${snippetDuration}ms + ${safetyBuffer}ms buffer`);
       
@@ -74,6 +76,7 @@ export function usePlaylistControl(snippets: Snippet[]) {
     
     if (currentSnippetIndex < snippets.length - 1) {
       setCurrentSnippetIndex(prevIndex => prevIndex + 1);
+      playbackAttempts.current = 0; // Reset attempts for new snippet
       
       // Always keep playing when advancing automatically
       if (autoAdvanceEnabled.current) {
@@ -91,50 +94,37 @@ export function usePlaylistControl(snippets: Snippet[]) {
     }
   };
 
-  // Handle snippet end event from player
+  // Handle snippet end with retry logic for mobile
   const handleSnippetEnd = () => {
-    console.log("Snippet ended naturally");
-    advanceToNextSnippet("natural-end");
+    if (isMobile && playbackAttempts.current < maxPlaybackAttempts) {
+      playbackAttempts.current++;
+      console.log(`Mobile playback attempt ${playbackAttempts.current}/${maxPlaybackAttempts}`);
+      
+      // Short delay before retrying
+      setTimeout(() => {
+        setIsCurrentSnippetPlaying(true);
+      }, 500);
+    } else {
+      advanceToNextSnippet("snippet-end");
+    }
   };
 
   // Restart playlist
   const handleRestartPlaylist = () => {
     setCurrentSnippetIndex(0);
     setPlaylistComplete(false);
-    setIsCurrentSnippetPlaying(true); // Auto-play from the start
-    lastSnippetEndedAt.current = null;
-    
-    if (snippetTimer.current) {
-      clearTimeout(snippetTimer.current);
-      snippetTimer.current = null;
-    }
-    
-    // Show a toast message
-    toast.success("Restarting playlist");
-  };
-
-  // Update playing status
-  const setSnippetPlayingStatus = (isPlaying: boolean) => {
-    console.log(`Setting playing status to: ${isPlaying} for snippet ${currentSnippetIndex + 1}`);
-    setIsCurrentSnippetPlaying(isPlaying);
+    setIsCurrentSnippetPlaying(true);
+    playbackAttempts.current = 0;
   };
 
   return {
     currentSnippetIndex,
     playlistComplete,
     isCurrentSnippetPlaying,
-    setCurrentSnippetIndex: (index: number) => {
-      setCurrentSnippetIndex(index);
-      lastSnippetEndedAt.current = Date.now(); // Prevent immediate advance
-      
-      if (snippetTimer.current) {
-        clearTimeout(snippetTimer.current);
-        snippetTimer.current = null;
-      }
-    },
+    setCurrentSnippetIndex,
     handleSnippetEnd,
     handleRestartPlaylist,
     setPlaylistComplete,
-    setSnippetPlayingStatus
+    setSnippetPlayingStatus: setIsCurrentSnippetPlaying
   };
 }
